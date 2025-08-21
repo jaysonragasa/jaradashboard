@@ -342,7 +342,7 @@
                 const forecastEl = document.getElementById('weather-forecast');
                 const animationContainer = document.getElementById('weather-animation-container');
                 const lat = 14.5995, lon = 120.9842;
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,time&timezone=Asia%2FSingapore`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max&timezone=Asia%2FSingapore`;
 
                 try {
                     const response = await fetch(url);
