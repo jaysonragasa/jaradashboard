@@ -67,32 +67,25 @@
         .event-indicator { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; background-color: #ef4444; border-radius: 50%; }
         .day-cell.selected { background-color: rgba(59, 130, 246, 0.5); }
         .day-cell.today { border: 1px solid rgba(255, 255, 255, 0.8); }
-        #event-modal { display: none; }
+        #event-modal, #context-menu-container { display: none; }
 
         /* Weather Animations */
-        #weather-animation-container {
-            position: relative;
-            width: 100%;
-            height: 80px;
-            margin-bottom: 1rem;
-            overflow: hidden;
-        }
-        .sun {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 50%; /* Relative size */
-            padding-bottom: 50%; /* Maintain aspect ratio */
-            background: #facc15;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-        }
+        #weather-animation-container { position: relative; width: 100%; height: 80px; margin-bottom: 1rem; overflow: hidden; }
+        .sun { position: absolute; top: 50%; left: 50%; width: 50%; padding-bottom: 50%; background: #facc15; border-radius: 50%; transform: translate(-50%, -50%); }
         .weather-sunny .sun { animation: spin 10s linear infinite; }
         .cloud { position: absolute; background: #e5e7eb; border-radius: 20px; }
         .cloud1 { width: 60%; height: 40%; top: 20%; left: -10%; animation: drift 15s linear infinite alternate; }
         .cloud2 { width: 50%; height: 30%; top: 50%; left: 50%; animation: drift 20s linear infinite alternate; }
         .rain-drop { position: absolute; width: 1px; height: 15%; background: #9ca3af; animation: fall 1s linear infinite; }
         
+        /* Sticky Notes Styles */
+        #notes-container { position: relative; height: 250px; }
+        .sticky-note { position: absolute; width: 120px; height: 120px; padding: 8px; background-color: rgba(254, 240, 138, 0.8); color: #374151; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 4px; cursor: move; resize: both; overflow: auto; }
+        .sticky-note:focus-within { z-index: 20; }
+        .delete-note-btn { position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; background: rgba(0,0,0,0.2); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; opacity: 0; }
+        .sticky-note:hover .delete-note-btn { opacity: 1; }
+        #add-note-btn { position: absolute; top: -12px; right: -12px; z-index: 25; width: 32px; height: 32px; background: #facc15; color: #1f2937; border-radius: 50%; border: none; font-size: 24px; line-height: 1; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
         @keyframes spin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
         @keyframes drift { from { transform: translateX(-20%); } to { transform: translateX(20%); } }
         @keyframes fall { from { transform: translateY(-20%); opacity: 1; } to { transform: translateY(120%); opacity: 0; } }
@@ -153,11 +146,31 @@
                 <ul id="todo-list" class="space-y-2 max-h-60 overflow-y-auto"></ul>
             </div>
         </div>
+
+        <div id="notes-widget" class="widget rounded-xl w-96">
+            <div class="widget-header flex items-center p-3 border-b border-white/20">
+                <div class="icon-container w-6 h-6 mr-3"><svg class="text-yellow-200" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></div>
+                <span class="title-text font-semibold">Sticky Notes</span>
+            </div>
+            <div class="widget-content p-4">
+                <div id="notes-container">
+                    <button id="add-note-btn">+</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="event-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div class="bg-gray-800 p-6 rounded-lg shadow-xl w-96"><h3 class="text-lg font-bold mb-4">Add Event</h3><input type="text" id="event-input" class="w-full bg-gray-700 text-white rounded-md p-2 mb-4 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="Event details..."><div class="flex justify-end space-x-2"><button id="cancel-event-btn" class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-500">Cancel</button><button id="save-event-btn" class="px-4 py-2 bg-purple-500 rounded-md hover:bg-purple-600">Save</button></div></div>
     </div>
+    
+    <div id="context-menu-container" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-gray-800 p-2 rounded-lg shadow-xl w-60">
+             <button id="reset-widgets-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Reset Widgets</button>
+             <button id="collapse-all-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Collapse All Widgets</button>
+        </div>
+    </div>
+
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -165,7 +178,14 @@
             const WIDGET_POSITIONS_KEY = 'dashboardWidgetPositions';
             let highestZ = 10;
 
-            function saveWidgetPositions() { /* ... */ }
+            function saveWidgetPositions() {
+                const positions = {};
+                widgets.forEach(widget => {
+                    positions[widget.id] = { left: widget.style.left, top: widget.style.top };
+                });
+                localStorage.setItem(WIDGET_POSITIONS_KEY, JSON.stringify(positions));
+            }
+
             function loadWidgetPositions() {
                 const savedPositions = JSON.parse(localStorage.getItem(WIDGET_POSITIONS_KEY));
                 if (savedPositions) {
@@ -191,22 +211,138 @@
                 });
             }
 
-            widgets.forEach(widget => { /* ... core widget dragging and z-index logic ... */ });
+            widgets.forEach(widget => {
+                const header = widget.querySelector('.widget-header');
+                let activeWidget = null;
+                let offsetX = 0, offsetY = 0;
+                let didDrag = false;
+
+                const onMouseDown = (e) => {
+                    if (e.target.closest('button, input, .sticky-note')) return;
+                    if (e.button !== 0 && e.type !== 'touchstart') return;
+                    
+                    highestZ++;
+                    widget.style.zIndex = highestZ;
+                    didDrag = false;
+                    activeWidget = widget;
+                    activeWidget.classList.add('dragging');
+                    
+                    const touch = e.type === 'touchstart' ? e.touches[0] : e;
+                    const rect = activeWidget.getBoundingClientRect();
+                    offsetX = touch.clientX - rect.left;
+                    offsetY = touch.clientY - rect.top;
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                    document.addEventListener('touchmove', onMouseMove, { passive: false });
+                    document.addEventListener('touchend', onMouseUp);
+                };
+
+                const onMouseMove = (e) => {
+                    if (!activeWidget) return;
+                    didDrag = true;
+                    e.preventDefault();
+                    
+                    const touch = e.type === 'touchmove' ? e.touches[0] : e;
+                    let newX = touch.clientX - offsetX;
+                    let newY = touch.clientY - offsetY;
+
+                    const container = document.getElementById('dashboard-container');
+                    const containerRect = container.getBoundingClientRect();
+                    const widgetRect = activeWidget.getBoundingClientRect();
+                    newX = Math.max(0, Math.min(newX, containerRect.width - widgetRect.width));
+                    newY = Math.max(0, Math.min(newY, containerRect.height - widgetRect.height));
+
+                    activeWidget.style.left = `${newX}px`;
+                    activeWidget.style.top = `${newY}px`;
+                };
+
+                const onMouseUp = () => {
+                    if (!activeWidget) return;
+                    activeWidget.classList.remove('dragging');
+                    if (didDrag) saveWidgetPositions();
+                    activeWidget = null;
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    document.removeEventListener('touchmove', onMouseMove);
+                    document.removeEventListener('touchend', onMouseUp);
+                };
+                
+                const toggleMinimize = (e) => {
+                    if (didDrag) return;
+                    if (e.target.closest('.widget-header')) widget.classList.toggle('minimized');
+                };
+
+                header.addEventListener('mousedown', onMouseDown);
+                header.addEventListener('touchstart', onMouseDown);
+                header.addEventListener('click', toggleMinimize);
+            });
+
+            // --- Long Press Context Menu ---
+            const dashboardContainer = document.getElementById('dashboard-container');
+            const contextMenu = document.getElementById('context-menu-container');
+            const resetBtn = document.getElementById('reset-widgets-btn');
+            const collapseAllBtn = document.getElementById('collapse-all-btn');
+            let longPressTimer;
+            let startX, startY;
+
+            function showContextMenu() { contextMenu.style.display = 'flex'; }
+            function hideContextMenu() { contextMenu.style.display = 'none'; }
+
+            dashboardContainer.addEventListener('mousedown', e => {
+                if (e.target !== dashboardContainer) return;
+                startX = e.clientX;
+                startY = e.clientY;
+                longPressTimer = setTimeout(showContextMenu, 500);
+            });
+            dashboardContainer.addEventListener('mouseup', () => clearTimeout(longPressTimer));
+            dashboardContainer.addEventListener('mousemove', e => {
+                if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
+                    clearTimeout(longPressTimer);
+                }
+            });
+            
+            dashboardContainer.addEventListener('touchstart', e => {
+                if (e.target !== dashboardContainer) return;
+                const touch = e.touches[0];
+                startX = touch.clientX;
+                startY = touch.clientY;
+                longPressTimer = setTimeout(showContextMenu, 500);
+            });
+            dashboardContainer.addEventListener('touchend', () => clearTimeout(longPressTimer));
+            dashboardContainer.addEventListener('touchmove', e => {
+                const touch = e.touches[0];
+                if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) {
+                    clearTimeout(longPressTimer);
+                }
+            });
+
+            contextMenu.addEventListener('click', (e) => {
+                if (e.target === contextMenu) hideContextMenu();
+            });
+            resetBtn.addEventListener('click', () => {
+                localStorage.removeItem(WIDGET_POSITIONS_KEY);
+                applyDefaultLayout();
+                hideContextMenu();
+            });
+            collapseAllBtn.addEventListener('click', () => {
+                widgets.forEach(w => w.classList.add('minimized'));
+                hideContextMenu();
+            });
+
+            // --- WIDGET INITIALIZATION ---
 
             async function initWeatherWidget() {
                 const tempEl = document.getElementById('weather-temp');
                 const descEl = document.getElementById('weather-desc');
                 const forecastEl = document.getElementById('weather-forecast');
                 const animationContainer = document.getElementById('weather-animation-container');
-                
                 const lat = 14.5995, lon = 120.9842;
                 const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max&timezone=Asia%2FSingapore`;
-
                 try {
                     const response = await fetch(url);
                     if (!response.ok) throw new Error('Weather data not available');
                     const data = await response.json();
-
                     const temp = Math.round(data.current.temperature_2m);
                     const weatherCode = data.current.weather_code;
                     tempEl.textContent = `${temp}°C`;
@@ -214,14 +350,13 @@
                     updateWeatherAnimation(weatherCode, animationContainer);
 
                     forecastEl.innerHTML = '';
-                    const days = ['Mon', 'Tue', 'Wed'];
-                    for(let i = 0; i < 3; i++) {
+                    for (let i = 1; i <= 3; i++) {
                         const day = document.createElement('div');
+                        const dayName = new Date(data.daily.time[i]).toLocaleDateString(undefined, { weekday: 'short' });
                         day.className = 'flex justify-between items-center text-sm';
-                        day.innerHTML = `<span>${days[i]}</span><span>${Math.round(data.daily.temperature_2m_max[i+1])}°C</span>`;
+                        day.innerHTML = `<span>${dayName}</span><span>${Math.round(data.daily.temperature_2m_max[i])}°C</span>`;
                         forecastEl.appendChild(day);
                     }
-
                 } catch (error) {
                     console.error("Failed to fetch weather:", error);
                     descEl.textContent = 'Could not load data';
@@ -229,46 +364,340 @@
             }
 
             function getWeatherDescription(code) {
-                const descriptions = { 0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Depositing rime fog", 51: "Light drizzle", 53: "Moderate drizzle", 55: "Dense drizzle", 61: "Slight rain", 63: "Moderate rain", 65: "Heavy rain", 80: "Slight rain showers", 81: "Moderate rain showers", 82: "Violent rain showers", 95: "Thunderstorm" };
+                const descriptions = { 0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Rime fog", 51: "Light drizzle", 53: "Drizzle", 55: "Dense drizzle", 61: "Slight rain", 63: "Rain", 65: "Heavy rain", 80: "Showers", 81: "Rain showers", 82: "Violent showers", 95: "Thunderstorm" };
                 return descriptions[code] || "Clear";
             }
 
             function updateWeatherAnimation(code, container) {
                 container.innerHTML = '';
-                if (code <= 1) { // Sunny / Clear
+                if (code <= 1) {
                     container.className = 'weather-sunny';
                     container.innerHTML = '<div class="sun"></div>';
-                } else if (code <= 3 || code === 45 || code === 48) { // Cloudy / Foggy
+                } else if (code <= 3 || code === 45 || code === 48) {
                     container.className = 'weather-cloudy';
                     container.innerHTML = '<div class="sun"></div><div class="cloud cloud1"></div><div class="cloud cloud2"></div>';
-                } else { // Rainy / Drizzle / Showers
+                } else {
                     container.className = 'weather-rainy';
-                    let rainHTML = '<div class="cloud cloud1"></div>';
+                    let html = '<div class="cloud cloud1"></div>';
                     for (let i = 0; i < 10; i++) {
-                        rainHTML += `<div class="rain-drop" style="left: ${Math.random() * 100}%; animation-delay: ${Math.random() * 2}s;"></div>`;
+                        html += `<div class="rain-drop" style="left: ${Math.random() * 100}%; animation-delay: ${Math.random() * 2}s;"></div>`;
                     }
-                    container.innerHTML = rainHTML;
+                    container.innerHTML = html;
                 }
             }
-            
-            function initCalendarWidget() { /* ... unchanged ... */ }
-            function initTodoListWidget() { /* ... unchanged ... */ }
-            function initClockWidget() { /* ... unchanged ... */ }
+
+            function initClockWidget() {
+                const hourHand = document.querySelector('.hour-hand');
+                const minuteHand = document.querySelector('.minute-hand');
+                const secondHand = document.querySelector('.second-hand');
+                const dateElement = document.getElementById('current-date');
+                function setDate() {
+                    const now = new Date();
+                    secondHand.style.transform = `rotate(${((now.getSeconds() / 60) * 360) + 90}deg)`;
+                    minuteHand.style.transform = `rotate(${((now.getMinutes() / 60) * 360) + ((now.getSeconds() / 60) * 6) + 90}deg)`;
+                    hourHand.style.transform = `rotate(${(((now.getHours() % 12) / 12) * 360) + ((now.getMinutes() / 60) * 30) + 90}deg)`;
+                    dateElement.textContent = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                }
+                setInterval(setDate, 1000);
+                setDate();
+            }
+
+            function initCalendarWidget() {
+                const KEY = 'dashboardCalendarEvents';
+                const monthYearEl = document.getElementById('month-year');
+                const grid = document.getElementById('calendar-grid');
+                const prevBtn = document.getElementById('prev-month');
+                const nextBtn = document.getElementById('next-month');
+                const display = document.getElementById('event-display-container');
+                const modal = document.getElementById('event-modal');
+                const input = document.getElementById('event-input');
+                const saveBtn = document.getElementById('save-event-btn');
+                const cancelBtn = document.getElementById('cancel-event-btn');
+                let date = new Date();
+                let selectedStr = null;
+                let events = JSON.parse(localStorage.getItem(KEY)) || {};
+
+                function save() {
+                    localStorage.setItem(KEY, JSON.stringify(events));
+                }
+
+                function render() {
+                    grid.innerHTML = '';
+                    const year = date.getFullYear();
+                    const month = date.getMonth();
+                    monthYearEl.textContent = `${date.toLocaleString('default', { month: 'long' })} ${year}`;
+                    const firstDay = new Date(year, month, 1).getDay();
+                    const daysInMonth = new Date(year, month + 1, 0).getDate();
+                    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(d => {
+                        const el = document.createElement('div');
+                        el.textContent = d;
+                        el.className = 'font-bold text-gray-400 text-sm';
+                        grid.appendChild(el);
+                    });
+                    for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const el = document.createElement('div');
+                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        el.textContent = day;
+                        el.className = 'day-cell p-1 cursor-pointer rounded-full hover:bg-blue-500/50';
+                        const today = new Date();
+                        if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) el.classList.add('today');
+                        if (events[dateStr] && events[dateStr].length > 0) {
+                            const ind = document.createElement('div');
+                            ind.className = 'event-indicator';
+                            el.appendChild(ind);
+                        }
+                        if (dateStr === selectedStr) el.classList.add('selected');
+                        el.addEventListener('click', () => {
+                            selectedStr = dateStr;
+                            render();
+                            renderEvents();
+                        });
+                        grid.appendChild(el);
+                    }
+                }
+
+                function renderEvents() {
+                    display.innerHTML = '';
+                    if (!selectedStr) return;
+                    const evs = events[selectedStr] || [];
+                    const title = document.createElement('h4');
+                    title.className = 'font-bold text-md mb-2';
+                    title.textContent = `Events for ${new Date(selectedStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}`;
+                    display.appendChild(title);
+                    if (evs.length > 0) {
+                        const ul = document.createElement('ul');
+                        ul.className = 'space-y-1';
+                        evs.forEach((ev, i) => {
+                            const li = document.createElement('li');
+                            li.className = 'text-sm flex justify-between items-center';
+                            li.textContent = ev;
+                            const delBtn = document.createElement('button');
+                            delBtn.textContent = '✕';
+                            delBtn.className = 'text-red-400 hover:text-red-300';
+                            delBtn.onclick = () => {
+                                events[selectedStr].splice(i, 1);
+                                save();
+                                render();
+                                renderEvents();
+                            };
+                            li.appendChild(delBtn);
+                            ul.appendChild(li);
+                        });
+                        display.appendChild(ul);
+                    } else {
+                        const p = document.createElement('p');
+                        p.className = 'text-sm text-gray-400';
+                        p.textContent = 'No events.';
+                        display.appendChild(p);
+                    }
+                    const addBtn = document.createElement('button');
+                    addBtn.textContent = '+ Add Event';
+                    addBtn.className = 'mt-2 w-full text-center bg-white/10 hover:bg-white/20 p-2 rounded-md text-sm';
+                    addBtn.onclick = () => {
+                        modal.style.display = 'flex';
+                        input.focus();
+                    };
+                    display.appendChild(addBtn);
+                }
+
+                saveBtn.addEventListener('click', () => {
+                    const txt = input.value.trim();
+                    if (txt && selectedStr) {
+                        if (!events[selectedStr]) events[selectedStr] = [];
+                        events[selectedStr].push(txt);
+                        save();
+                        input.value = '';
+                        modal.style.display = 'none';
+                        render();
+                        renderEvents();
+                    }
+                });
+                input.addEventListener('keypress', e => { if (e.key === 'Enter') saveBtn.click(); });
+                cancelBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+                prevBtn.addEventListener('click', () => {
+                    date.setMonth(date.getMonth() - 1);
+                    render();
+                });
+                nextBtn.addEventListener('click', () => {
+                    date.setMonth(date.getMonth() + 1);
+                    render();
+                });
+                render();
+            }
+
+            function initTodoListWidget() {
+                const KEY = 'dashboardTodoItems';
+                const input = document.getElementById('todo-input');
+                const addBtn = document.getElementById('add-todo-btn');
+                const list = document.getElementById('todo-list');
+
+                function save() {
+                    const items = [];
+                    list.querySelectorAll('.todo-item').forEach(el => items.push({ text: el.querySelector('span').textContent, completed: el.classList.contains('completed') }));
+                    localStorage.setItem(KEY, JSON.stringify(items));
+                }
+
+                function createEl({ text, completed }) {
+                    const li = document.createElement('li');
+                    li.className = 'todo-item flex justify-between items-center p-2 rounded-md hover:bg-white/10';
+                    li.setAttribute('draggable', 'true');
+                    if (completed) li.classList.add('completed');
+                    const span = document.createElement('span');
+                    span.textContent = text;
+                    li.appendChild(span);
+                    const delBtn = document.createElement('button');
+                    delBtn.textContent = '✕';
+                    delBtn.className = 'delete-btn text-red-400 font-bold';
+                    li.appendChild(delBtn);
+                    li.addEventListener('click', e => {
+                        if (e.target !== delBtn) {
+                            li.classList.toggle('completed');
+                            save();
+                        }
+                    });
+                    delBtn.addEventListener('click', () => {
+                        li.remove();
+                        save();
+                    });
+                    li.addEventListener('dragstart', () => li.classList.add('dragging'));
+                    li.addEventListener('dragend', () => {
+                        li.classList.remove('dragging');
+                        save();
+                    });
+                    list.appendChild(li);
+                }
+
+                function load() {
+                    const items = JSON.parse(localStorage.getItem(KEY)) || [];
+                    list.innerHTML = '';
+                    items.forEach(createEl);
+                }
+
+                function add() {
+                    const text = input.value.trim();
+                    if (text) {
+                        createEl({ text, completed: false });
+                        save();
+                        input.value = '';
+                    }
+                }
+
+                list.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    const afterEl = [...list.querySelectorAll('.todo-item:not(.dragging)')].reduce((closest, child) => {
+                        const box = child.getBoundingClientRect();
+                        const offset = e.clientY - box.top - box.height / 2;
+                        return (offset < 0 && offset > closest.offset) ? { offset: offset, element: child } : closest;
+                    }, { offset: Number.NEGATIVE_INFINITY }).element;
+                    const draggingEl = document.querySelector('.todo-item.dragging');
+                    if (draggingEl) {
+                        if (afterEl == null) list.appendChild(draggingEl);
+                        else list.insertBefore(draggingEl, afterEl);
+                    }
+                });
+
+                addBtn.addEventListener('click', add);
+                input.addEventListener('keypress', e => { if (e.key === 'Enter') add(); });
+                load();
+            }
+
+            function initNotesWidget() {
+                const NOTES_KEY = 'dashboardStickyNotes';
+                const container = document.getElementById('notes-container');
+                const addBtn = document.getElementById('add-note-btn');
+                let notes = JSON.parse(localStorage.getItem(NOTES_KEY)) || [];
+
+                function saveNotes() {
+                    localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+                }
+
+                function createNoteElement(note) {
+                    const noteEl = document.createElement('div');
+                    noteEl.className = 'sticky-note';
+                    noteEl.style.left = note.left;
+                    noteEl.style.top = note.top;
+                    noteEl.setAttribute('contenteditable', 'true');
+                    noteEl.textContent = note.content;
+                    noteEl.dataset.id = note.id;
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-note-btn';
+                    deleteBtn.innerHTML = '&times;';
+                    noteEl.appendChild(deleteBtn);
+
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        notes = notes.filter(n => n.id !== note.id);
+                        saveNotes();
+                        noteEl.remove();
+                    });
+
+                    noteEl.addEventListener('input', () => {
+                        const targetNote = notes.find(n => n.id === note.id);
+                        if(targetNote) {
+                           targetNote.content = noteEl.textContent;
+                           saveNotes();
+                        }
+                    });
+
+                    // Dragging logic for notes
+                    let activeNote = null, offsetX = 0, offsetY = 0;
+                    noteEl.addEventListener('mousedown', (e) => {
+                        e.stopPropagation(); // Prevent widget from dragging
+                        activeNote = noteEl;
+                        offsetX = e.clientX - activeNote.offsetLeft;
+                        offsetY = e.clientY - activeNote.offsetTop;
+                        document.addEventListener('mousemove', onNoteMove);
+                        document.addEventListener('mouseup', onNoteUp);
+                    });
+                    
+                    function onNoteMove(e) {
+                        if (!activeNote) return;
+                        let newX = e.clientX - offsetX;
+                        let newY = e.clientY - offsetY;
+                        activeNote.style.left = `${newX}px`;
+                        activeNote.style.top = `${newY}px`;
+                    }
+
+                    function onNoteUp() {
+                        if (!activeNote) return;
+                        const targetNote = notes.find(n => n.id === note.id);
+                        if(targetNote){
+                            targetNote.left = activeNote.style.left;
+                            targetNote.top = activeNote.style.top;
+                            saveNotes();
+                        }
+                        activeNote = null;
+                        document.removeEventListener('mousemove', onNoteMove);
+                        document.removeEventListener('mouseup', onNoteUp);
+                    }
+                    
+                    container.appendChild(noteEl);
+                }
+
+                addBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const newNote = {
+                        id: Date.now(),
+                        content: 'New note...',
+                        left: '20px',
+                        top: '20px'
+                    };
+                    notes.push(newNote);
+                    saveNotes();
+                    createNoteElement(newNote);
+                });
+
+                notes.forEach(createNoteElement);
+            }
 
             loadWidgetPositions();
             initClockWidget();
             initCalendarWidget();
             initWeatherWidget();
             initTodoListWidget();
-            
-            saveWidgetPositions = function() { const pos = {}; widgets.forEach(w => { pos[w.id] = { left: w.style.left, top: w.style.top }; }); localStorage.setItem(WIDGET_POSITIONS_KEY, JSON.stringify(pos)); };
-            widgets.forEach(widget => { const header = widget.querySelector('.widget-header'); let activeWidget = null; let offsetX = 0, offsetY = 0; let didDrag = false; const onMouseDown = (e) => { if (e.target.closest('button, input')) return; if (e.button !== 0 && e.type !== 'touchstart') return; highestZ++; widget.style.zIndex = highestZ; didDrag = false; activeWidget = widget; activeWidget.classList.add('dragging'); const touch = e.type === 'touchstart' ? e.touches[0] : e; const rect = activeWidget.getBoundingClientRect(); offsetX = touch.clientX - rect.left; offsetY = touch.clientY - rect.top; document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp); document.addEventListener('touchmove', onMouseMove, { passive: false }); document.addEventListener('touchend', onMouseUp); }; const onMouseMove = (e) => { if (!activeWidget) return; didDrag = true; e.preventDefault(); const touch = e.type === 'touchmove' ? e.touches[0] : e; let newX = touch.clientX - offsetX; let newY = touch.clientY - offsetY; const container = document.getElementById('dashboard-container'); const containerRect = container.getBoundingClientRect(); const widgetRect = activeWidget.getBoundingClientRect(); newX = Math.max(0, Math.min(newX, containerRect.width - widgetRect.width)); newY = Math.max(0, Math.min(newY, containerRect.height - widgetRect.height)); activeWidget.style.left = `${newX}px`; activeWidget.style.top = `${newY}px`; }; const onMouseUp = () => { if (!activeWidget) return; activeWidget.classList.remove('dragging'); if (didDrag) saveWidgetPositions(); activeWidget = null; document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); document.removeEventListener('touchmove', onMouseMove); document.removeEventListener('touchend', onMouseUp); }; const toggleMinimize = (e) => { if (didDrag) return; if (e.target.closest('.widget-header')) widget.classList.toggle('minimized'); }; header.addEventListener('mousedown', onMouseDown); header.addEventListener('touchstart', onMouseDown); header.addEventListener('click', toggleMinimize); });
-            initClockWidget = function() { const hourHand = document.querySelector('.hour-hand'), minuteHand = document.querySelector('.minute-hand'), secondHand = document.querySelector('.second-hand'), dateElement = document.getElementById('current-date'); function setDate() { const now = new Date(); secondHand.style.transform = `rotate(${((now.getSeconds()/60)*360)+90}deg)`; minuteHand.style.transform = `rotate(${((now.getMinutes()/60)*360)+((now.getSeconds()/60)*6)+90}deg)`; hourHand.style.transform = `rotate(${(((now.getHours()%12)/12)*360)+((now.getMinutes()/60)*30)+90}deg)`; dateElement.textContent = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); } setInterval(setDate, 1000); setDate(); };
-            initCalendarWidget = function() { const KEY = 'dashboardCalendarEvents', monthYearEl = document.getElementById('month-year'), grid = document.getElementById('calendar-grid'), prevBtn = document.getElementById('prev-month'), nextBtn = document.getElementById('next-month'), display = document.getElementById('event-display-container'), modal = document.getElementById('event-modal'), input = document.getElementById('event-input'), saveBtn = document.getElementById('save-event-btn'), cancelBtn = document.getElementById('cancel-event-btn'); let date = new Date(), selectedStr = null, events = JSON.parse(localStorage.getItem(KEY)) || {}; function save() { localStorage.setItem(KEY, JSON.stringify(events)); } function render() { grid.innerHTML = ''; const year = date.getFullYear(), month = date.getMonth(); monthYearEl.textContent = `${date.toLocaleString('default', { month: 'long' })} ${year}`; const firstDay = new Date(year, month, 1).getDay(), daysInMonth = new Date(year, month + 1, 0).getDate(); ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(d => { const el = document.createElement('div'); el.textContent = d; el.className = 'font-bold text-gray-400 text-sm'; grid.appendChild(el); }); for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div')); for (let day = 1; day <= daysInMonth; day++) { const el = document.createElement('div'), dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`; el.textContent = day; el.className = 'day-cell p-1 cursor-pointer rounded-full hover:bg-blue-500/50'; const today = new Date(); if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) el.classList.add('today'); if (events[dateStr] && events[dateStr].length > 0) { const ind = document.createElement('div'); ind.className = 'event-indicator'; el.appendChild(ind); } if (dateStr === selectedStr) el.classList.add('selected'); el.addEventListener('click', () => { selectedStr = dateStr; render(); renderEvents(); }); grid.appendChild(el); } } function renderEvents() { display.innerHTML = ''; if (!selectedStr) return; const evs = events[selectedStr] || []; const title = document.createElement('h4'); title.className = 'font-bold text-md mb-2'; title.textContent = `Events for ${new Date(selectedStr+'T00:00:00').toLocaleDateString(undefined,{month:'long',day:'numeric'})}`; display.appendChild(title); if (evs.length > 0) { const ul = document.createElement('ul'); ul.className = 'space-y-1'; evs.forEach((ev, i) => { const li = document.createElement('li'); li.className = 'text-sm flex justify-between items-center'; li.textContent = ev; const delBtn = document.createElement('button'); delBtn.textContent = '✕'; delBtn.className = 'text-red-400 hover:text-red-300'; delBtn.onclick = () => { events[selectedStr].splice(i, 1); save(); render(); renderEvents(); }; li.appendChild(delBtn); ul.appendChild(li); }); display.appendChild(ul); } else { const p = document.createElement('p'); p.className = 'text-sm text-gray-400'; p.textContent = 'No events.'; display.appendChild(p); } const addBtn = document.createElement('button'); addBtn.textContent = '+ Add Event'; addBtn.className = 'mt-2 w-full text-center bg-white/10 hover:bg-white/20 p-2 rounded-md text-sm'; addBtn.onclick = () => { modal.style.display = 'flex'; input.focus(); }; display.appendChild(addBtn); } saveBtn.addEventListener('click', () => { const txt = input.value.trim(); if (txt && selectedStr) { if (!events[selectedStr]) events[selectedStr] = []; events[selectedStr].push(txt); save(); input.value = ''; modal.style.display = 'none'; render(); renderEvents(); } }); input.addEventListener('keypress', e => { if (e.key === 'Enter') saveBtn.click(); }); cancelBtn.addEventListener('click', () => { modal.style.display = 'none'; }); prevBtn.addEventListener('click', () => { date.setMonth(date.getMonth() - 1); render(); }); nextBtn.addEventListener('click', () => { date.setMonth(date.getMonth() + 1); render(); }); render(); };
-            initTodoListWidget = function() { const KEY = 'dashboardTodoItems', input = document.getElementById('todo-input'), addBtn = document.getElementById('add-todo-btn'), list = document.getElementById('todo-list'); function save() { const items = []; list.querySelectorAll('.todo-item').forEach(el => items.push({ text: el.querySelector('span').textContent, completed: el.classList.contains('completed') })); localStorage.setItem(KEY, JSON.stringify(items)); } function createEl({ text, completed }) { const li = document.createElement('li'); li.className = 'todo-item flex justify-between items-center p-2 rounded-md hover:bg-white/10'; li.setAttribute('draggable', 'true'); if (completed) li.classList.add('completed'); const span = document.createElement('span'); span.textContent = text; li.appendChild(span); const delBtn = document.createElement('button'); delBtn.textContent = '✕'; delBtn.className = 'delete-btn text-red-400 font-bold'; li.appendChild(delBtn); li.addEventListener('click', e => { if (e.target !== delBtn) { li.classList.toggle('completed'); save(); } }); delBtn.addEventListener('click', () => { li.remove(); save(); }); li.addEventListener('dragstart', () => li.classList.add('dragging')); li.addEventListener('dragend', () => { li.classList.remove('dragging'); save(); }); list.appendChild(li); } function load() { const items = JSON.parse(localStorage.getItem(KEY)) || []; list.innerHTML = ''; items.forEach(createEl); } function add() { const text = input.value.trim(); if (text) { createEl({ text, completed: false }); save(); input.value = ''; } } list.addEventListener('dragover', e => { e.preventDefault(); const afterEl = [...list.querySelectorAll('.todo-item:not(.dragging)')].reduce((closest, child) => { const box = child.getBoundingClientRect(), offset = e.clientY - box.top - box.height / 2; return (offset < 0 && offset > closest.offset) ? { offset: offset, element: child } : closest; }, { offset: Number.NEGATIVE_INFINITY }).element; const draggingEl = document.querySelector('.todo-item.dragging'); if (draggingEl) { if (afterEl == null) list.appendChild(draggingEl); else list.insertBefore(draggingEl, afterEl); } }); addBtn.addEventListener('click', add); input.addEventListener('keypress', e => { if (e.key === 'Enter') add(); }); load(); };
-            initClockWidget();
-            initCalendarWidget();
-            initTodoListWidget();
+            initNotesWidget();
         });
     </script>
 
