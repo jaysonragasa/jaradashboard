@@ -286,8 +286,12 @@
             let longPressTimer;
             let startX, startY;
 
-            function showContextMenu() { contextMenu.style.display = 'flex'; }
-            function hideContextMenu() { contextMenu.style.display = 'none'; }
+            function showContextMenu() { 
+                contextMenu.style.display = 'flex'; 
+            }
+            function hideContextMenu() { 
+                contextMenu.style.display = 'none'; 
+            }
 
             dashboardContainer.addEventListener('mousedown', e => {
                 if (e.target !== dashboardContainer) return;
@@ -338,7 +342,8 @@
                 const forecastEl = document.getElementById('weather-forecast');
                 const animationContainer = document.getElementById('weather-animation-container');
                 const lat = 14.5995, lon = 120.9842;
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max&timezone=Asia%2FSingapore`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,time&timezone=Asia%2FSingapore`;
+
                 try {
                     const response = await fetch(url);
                     if (!response.ok) throw new Error('Weather data not available');
@@ -350,9 +355,10 @@
                     updateWeatherAnimation(weatherCode, animationContainer);
 
                     forecastEl.innerHTML = '';
+                    const dailyTime = data.daily.time;
                     for (let i = 1; i <= 3; i++) {
                         const day = document.createElement('div');
-                        const dayName = new Date(data.daily.time[i]).toLocaleDateString(undefined, { weekday: 'short' });
+                        const dayName = new Date(dailyTime[i]).toLocaleDateString(undefined, { weekday: 'short' });
                         day.className = 'flex justify-between items-center text-sm';
                         day.innerHTML = `<span>${dayName}</span><span>${Math.round(data.daily.temperature_2m_max[i])}°C</span>`;
                         forecastEl.appendChild(day);
@@ -628,13 +634,13 @@
 
                     deleteBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        notes = notes.filter(n => n.id !== note.id);
+                        notes = notes.filter(n => n.id != note.id);
                         saveNotes();
                         noteEl.remove();
                     });
 
                     noteEl.addEventListener('input', () => {
-                        const targetNote = notes.find(n => n.id === note.id);
+                        const targetNote = notes.find(n => n.id == note.id);
                         if(targetNote) {
                            targetNote.content = noteEl.textContent;
                            saveNotes();
@@ -662,7 +668,7 @@
 
                     function onNoteUp() {
                         if (!activeNote) return;
-                        const targetNote = notes.find(n => n.id === note.id);
+                        const targetNote = notes.find(n => n.id == note.id);
                         if(targetNote){
                             targetNote.left = activeNote.style.left;
                             targetNote.top = activeNote.style.top;
