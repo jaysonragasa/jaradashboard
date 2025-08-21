@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Widgets</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for the dashboard and widgets */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            touch-action: none; /* Prevent default touch actions like scrolling when dragging */
+            background-image: url('https://images.pexels.com/photos/1025469/pexels-photo-1025469.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        .widget {
+            position: absolute;
+            /* Glassmorphism effect */
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            /* Make transitions specific to avoid affecting 'top' and 'left' during drag */
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, width 0.3s ease-in-out, height 0.3s ease-in-out;
+            z-index: 10;
+        }
+
+        .dark .widget {
+             background: rgba(17, 24, 39, 0.4); /* dark bg with transparency */
+             border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .widget-header {
+            cursor: move; /* Grab cursor for dragging */
+            user-select: none; /* Prevent text selection when dragging */
+        }
+        
+        .widget.dragging {
+            /* z-index is handled by JS now */
+            transform: scale(1.02);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            /* No transition during drag for immediate response */
+            transition: none;
+        }
+
+        /* Minimized state */
+        .widget.minimized {
+            width: 64px;
+            height: 64px;
+            overflow: hidden;
+        }
+
+        .widget.minimized .widget-content {
+            display: none;
+        }
+
+        .widget.minimized .widget-header .title-text {
+            display: none;
+        }
+        
+        .widget.minimized .widget-header .icon {
+            margin: 0;
+        }
+
+        /* Analog clock styles */
+        .clock-face {
+            width: 150px;
+            height: 150px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .hand {
+            width: 50%;
+            position: absolute;
+            top: 50%;
+            transform-origin: 100%;
+            transform: rotate(90deg);
+            transition: transform 0.05s cubic-bezier(0.4, 2.08, 0.55, 0.44);
+        }
+
+        .hour-hand {
+            height: 4px;
+            background: #ffffff; /* White */
+            width: 30%;
+            left: 20%;
+        }
+
+        .minute-hand {
+            height: 3px;
+            background: #ffffff; /* White */
+            width: 40%;
+            left: 10%;
+        }
+
+        .second-hand {
+            height: 1px;
+            background: #ef4444; /* red-500 */
+            width: 45%;
+            left: 5%;
+        }
+        
+        .clock-center {
+            width: 8px;
+            height: 8px;
+            background: #ffffff;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+        }
+
+        /* Todo list styles */
+        .todo-item {
+            cursor: pointer;
+        }
+        .todo-item.completed span {
+            text-decoration: line-through;
+            color: #d1d5db; /* gray-300 */
+        }
+        .delete-btn {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .todo-item:hover .delete-btn {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-100 overflow-hidden">
+
+    <!-- Dashboard Container -->
+    <div id="dashboard-container" class="relative w-full h-screen p-4">
+
+        <!-- Widget 1: Weather -->
+        <div id="weather-widget" class="widget rounded-xl w-72" style="top: 20px; left: 20px;">
+            <div class="widget-header flex items-center p-3 border-b border-white/20">
+                <svg class="icon w-6 h-6 mr-3 text-blue-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+                <span class="title-text font-semibold">Weather</span>
+            </div>
+            <div class="widget-content p-4">
+                <div class="text-center">
+                    <p class="text-4xl font-bold">25°C</p>
+                    <p class="text-gray-200">Partly Cloudy</p>
+                    <p class="text-sm mt-1">Manila, PH</p>
+                </div>
+                <div class="mt-4 space-y-2">
+                    <div class="flex justify-between items-center"><span>Mon</span><span>26°C</span></div>
+                    <div class="flex justify-between items-center"><span>Tue</span><span>28°C</span></div>
+                    <div class="flex justify-between items-center"><span>Wed</span><span>27°C</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Widget 2: Clock & Date -->
+        <div id="clock-widget" class="widget rounded-xl w-72" style="top: 20px; left: 320px;">
+            <div class="widget-header flex items-center p-3 border-b border-white/20">
+                <svg class="icon w-6 h-6 mr-3 text-green-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span class="title-text font-semibold">Clock & Date</span>
+            </div>
+            <div class="widget-content p-4 flex flex-col items-center">
+                <div class="clock-face mb-4 bg-black/20">
+                    <div class="hand hour-hand"></div>
+                    <div class="hand minute-hand"></div>
+                    <div class="hand second-hand"></div>
+                    <div class="clock-center"></div>
+                </div>
+                <p id="current-date" class="font-medium text-lg"></p>
+            </div>
+        </div>
+
+        <!-- Widget 3: Calendar -->
+        <div id="calendar-widget" class="widget rounded-xl w-80" style="top: 20px; left: 620px;">
+            <div class="widget-header flex items-center p-3 border-b border-white/20">
+                <svg class="icon w-6 h-6 mr-3 text-purple-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                <span class="title-text font-semibold">Calendar</span>
+            </div>
+            <div class="widget-content p-4">
+                <div class="flex justify-between items-center mb-2">
+                    <button id="prev-month" class="p-1 rounded-full hover:bg-white/20">&lt;</button>
+                    <h3 id="month-year" class="font-semibold text-lg"></h3>
+                    <button id="next-month" class="p-1 rounded-full hover:bg-white/20">&gt;</button>
+                </div>
+                <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center"></div>
+            </div>
+        </div>
+        
+        <!-- Widget 4: Todo List -->
+        <div id="todo-widget" class="widget rounded-xl w-80" style="top: 350px; left: 20px;">
+            <div class="widget-header flex items-center p-3 border-b border-white/20">
+                <svg class="icon w-6 h-6 mr-3 text-yellow-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                <span class="title-text font-semibold">Todo List</span>
+            </div>
+            <div class="widget-content p-4">
+                <div class="flex mb-3">
+                    <input type="text" id="todo-input" class="flex-grow bg-black/20 text-white placeholder-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Add a new task...">
+                    <button id="add-todo-btn" class="bg-yellow-500 text-white font-bold px-4 rounded-r-md hover:bg-yellow-600">+</button>
+                </div>
+                <ul id="todo-list" class="space-y-2 max-h-60 overflow-y-auto">
+                    <!-- Todo items will be generated here -->
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- CORE WIDGET FUNCTIONALITY ---
+            const widgets = document.querySelectorAll('.widget');
+            const WIDGET_POSITIONS_KEY = 'dashboardWidgetPositions';
+            let highestZ = 10; // Start with the base z-index
+
+            function saveWidgetPositions() {
+                const positions = {};
+                widgets.forEach(widget => {
+                    positions[widget.id] = { left: widget.style.left, top: widget.style.top };
+                });
+                localStorage.setItem(WIDGET_POSITIONS_KEY, JSON.stringify(positions));
+            }
+
+            function loadWidgetPositions() {
+                const savedPositions = JSON.parse(localStorage.getItem(WIDGET_POSITIONS_KEY));
+                if (savedPositions) {
+                    Object.keys(savedPositions).forEach(id => {
+                        const widget = document.getElementById(id);
+                        if (widget) {
+                            widget.style.left = savedPositions[id].left;
+                            widget.style.top = savedPositions[id].top;
+                        }
+                    });
+                }
+            }
+            
+            widgets.forEach(widget => {
+                const header = widget.querySelector('.widget-header');
+                let activeWidget = null;
+                let offsetX = 0, offsetY = 0;
+                let didDrag = false;
+
+                const onMouseDown = (e) => {
+                    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+                    if (e.button !== 0 && e.type !== 'touchstart') return;
+                    
+                    // Bring widget to front
+                    highestZ++;
+                    widget.style.zIndex = highestZ;
+
+                    didDrag = false;
+                    activeWidget = widget;
+                    activeWidget.classList.add('dragging');
+                    
+                    const touch = e.type === 'touchstart' ? e.touches[0] : e;
+                    const rect = activeWidget.getBoundingClientRect();
+                    offsetX = touch.clientX - rect.left;
+                    offsetY = touch.clientY - rect.top;
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                    document.addEventListener('touchmove', onMouseMove, { passive: false });
+                    document.addEventListener('touchend', onMouseUp);
+                };
+
+                const onMouseMove = (e) => {
+                    if (!activeWidget) return;
+                    didDrag = true;
+                    e.preventDefault();
+                    
+                    const touch = e.type === 'touchmove' ? e.touches[0] : e;
+                    let newX = touch.clientX - offsetX;
+                    let newY = touch.clientY - offsetY;
+
+                    const container = document.getElementById('dashboard-container');
+                    const containerRect = container.getBoundingClientRect();
+                    const widgetRect = activeWidget.getBoundingClientRect();
+                    newX = Math.max(0, Math.min(newX, containerRect.width - widgetRect.width));
+                    newY = Math.max(0, Math.min(newY, containerRect.height - widgetRect.height));
+
+                    activeWidget.style.left = `${newX}px`;
+                    activeWidget.style.top = `${newY}px`;
+                };
+
+                const onMouseUp = () => {
+                    if (!activeWidget) return;
+                    activeWidget.classList.remove('dragging');
+                    if (didDrag) {
+                        saveWidgetPositions();
+                    }
+                    activeWidget = null;
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    document.removeEventListener('touchmove', onMouseMove);
+                    document.removeEventListener('touchend', onMouseUp);
+                };
+                
+                const toggleMinimize = (e) => {
+                    if (didDrag) return;
+                    if (e.target.closest('.widget-header')) {
+                        widget.classList.toggle('minimized');
+                    }
+                };
+
+                header.addEventListener('mousedown', onMouseDown);
+                header.addEventListener('touchstart', onMouseDown);
+                header.addEventListener('click', toggleMinimize);
+            });
+
+            // --- WIDGET-SPECIFIC MODULES ---
+
+            function initClockWidget() {
+                const hourHand = document.querySelector('.hour-hand');
+                const minuteHand = document.querySelector('.minute-hand');
+                const secondHand = document.querySelector('.second-hand');
+                const dateElement = document.getElementById('current-date');
+
+                function setDate() {
+                    const now = new Date();
+                    const seconds = now.getSeconds();
+                    secondHand.style.transform = `rotate(${((seconds / 60) * 360) + 90}deg)`;
+                    const minutes = now.getMinutes();
+                    minuteHand.style.transform = `rotate(${((minutes / 60) * 360) + ((seconds/60)*6) + 90}deg)`;
+                    const hours = now.getHours();
+                    hourHand.style.transform = `rotate(${(((hours % 12) / 12) * 360) + ((minutes/60)*30) + 90}deg)`;
+                    dateElement.textContent = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                }
+                setInterval(setDate, 1000);
+                setDate();
+            }
+
+            function initCalendarWidget() {
+                const monthYearElement = document.getElementById('month-year');
+                const calendarGrid = document.getElementById('calendar-grid');
+                const prevMonthBtn = document.getElementById('prev-month');
+                const nextMonthBtn = document.getElementById('next-month');
+                let currentDate = new Date();
+
+                function renderCalendar() {
+                    calendarGrid.innerHTML = '';
+                    const year = currentDate.getFullYear();
+                    const month = currentDate.getMonth();
+                    monthYearElement.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
+                    const firstDayOfMonth = new Date(year, month, 1).getDay();
+                    const daysInMonth = new Date(year, month + 1, 0).getDate();
+                    
+                    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(day => {
+                        const dayEl = document.createElement('div');
+                        dayEl.textContent = day;
+                        dayEl.className = 'font-bold text-gray-400 text-sm';
+                        calendarGrid.appendChild(dayEl);
+                    });
+
+                    for (let i = 0; i < firstDayOfMonth; i++) calendarGrid.appendChild(document.createElement('div'));
+
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const dayEl = document.createElement('div');
+                        dayEl.textContent = day;
+                        dayEl.className = 'p-1 cursor-pointer rounded-full hover:bg-blue-500/50';
+                        const today = new Date();
+                        if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                            dayEl.classList.add('bg-blue-500', 'text-white', 'font-bold');
+                        }
+                        calendarGrid.appendChild(dayEl);
+                    }
+                }
+                prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
+                nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
+                renderCalendar();
+            }
+            
+            function initWeatherWidget() { console.log("Weather widget initialized."); }
+
+            function initTodoListWidget() {
+                const TODO_ITEMS_KEY = 'dashboardTodoItems';
+                const todoInput = document.getElementById('todo-input');
+                const addTodoBtn = document.getElementById('add-todo-btn');
+                const todoList = document.getElementById('todo-list');
+                
+                function saveTodos() {
+                    const items = [];
+                    todoList.querySelectorAll('.todo-item').forEach(itemEl => {
+                        items.push({
+                            text: itemEl.querySelector('span').textContent,
+                            completed: itemEl.classList.contains('completed')
+                        });
+                    });
+                    localStorage.setItem(TODO_ITEMS_KEY, JSON.stringify(items));
+                }
+
+                function createTodoElement({ text, completed }) {
+                    const li = document.createElement('li');
+                    li.className = 'todo-item flex justify-between items-center p-2 rounded-md hover:bg-white/10';
+                    if (completed) li.classList.add('completed');
+
+                    const span = document.createElement('span');
+                    span.textContent = text;
+                    li.appendChild(span);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '✕';
+                    deleteBtn.className = 'delete-btn text-red-400 font-bold';
+                    li.appendChild(deleteBtn);
+
+                    // Event listeners
+                    li.addEventListener('click', (e) => {
+                        if (e.target !== deleteBtn) {
+                            li.classList.toggle('completed');
+                            saveTodos();
+                        }
+                    });
+                    deleteBtn.addEventListener('click', () => {
+                        li.remove();
+                        saveTodos();
+                    });
+
+                    todoList.appendChild(li);
+                }
+                
+                function loadTodos() {
+                    const savedTodos = JSON.parse(localStorage.getItem(TODO_ITEMS_KEY)) || [];
+                    savedTodos.forEach(todo => createTodoElement(todo));
+                }
+
+                function addTodo() {
+                    const text = todoInput.value.trim();
+                    if (text) {
+                        createTodoElement({ text, completed: false });
+                        saveTodos();
+                        todoInput.value = '';
+                    }
+                }
+
+                addTodoBtn.addEventListener('click', addTodo);
+                todoInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') addTodo();
+                });
+
+                loadTodos();
+            }
+
+            // --- INITIALIZE ALL WIDGETS AND LOAD POSITIONS ---
+            loadWidgetPositions();
+            initClockWidget();
+            initCalendarWidget();
+            initWeatherWidget();
+            initTodoListWidget();
+        });
+    </script>
+
+</body>
+</html>
