@@ -28,6 +28,7 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, width 0.3s ease-in-out, height 0.3s ease-in-out;
             z-index: 10;
+            overflow: hidden; /* Contain the animation background */
         }
 
         .dark .widget {
@@ -70,13 +71,13 @@
         #event-modal, #context-menu-container { display: none; }
 
         /* Weather Animations */
-        #weather-animation-container { position: relative; width: 100%; height: 80px; margin-bottom: 1rem; overflow: hidden; }
-        .sun { position: absolute; top: 50%; left: 50%; width: 50%; padding-bottom: 50%; background: #facc15; border-radius: 50%; transform: translate(-50%, -50%); }
-        .weather-sunny .sun { animation: spin 10s linear infinite; }
-        .cloud { position: absolute; background: #e5e7eb; border-radius: 20px; }
-        .cloud1 { width: 60%; height: 40%; top: 20%; left: -10%; animation: drift 15s linear infinite alternate; }
-        .cloud2 { width: 50%; height: 30%; top: 50%; left: 50%; animation: drift 20s linear infinite alternate; }
-        .rain-drop { position: absolute; width: 1px; height: 15%; background: #9ca3af; animation: fall 1s linear infinite; }
+        .weather-animation-bg { position: absolute; inset: 0; z-index: 0; }
+        .sun { position: absolute; top: 30%; left: 50%; width: 60px; height: 60px; background: #facc15; border-radius: 50%; transform: translate(-50%, -50%); }
+        .weather-sunny .sun { animation: spin 20s linear infinite; }
+        .cloud { position: absolute; background: #e5e7eb; border-radius: 20px; opacity: 0.8; }
+        .cloud1 { width: 100px; height: 60px; top: 20%; left: 30%; animation: drift 25s linear infinite alternate; }
+        .cloud2 { width: 80px; height: 40px; top: 50%; left: 10%; animation: drift 35s linear infinite alternate-reverse; }
+        .rain-drop { position: absolute; width: 1px; height: 10px; background: #9ca3af; animation: fall 1s linear infinite; }
         
         /* Sticky Notes Styles */
         #notes-container { position: relative; height: 250px; }
@@ -87,77 +88,15 @@
         #add-note-btn { position: absolute; top: -12px; right: -12px; z-index: 25; width: 32px; height: 32px; background: #facc15; color: #1f2937; border-radius: 50%; border: none; font-size: 24px; line-height: 1; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
         @keyframes spin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
-        @keyframes drift { from { transform: translateX(-20%); } to { transform: translateX(20%); } }
-        @keyframes fall { from { transform: translateY(-20%); opacity: 1; } to { transform: translateY(120%); opacity: 0; } }
+        @keyframes drift { from { transform: translateX(-30%); } to { transform: translateX(30%); } }
+        /*@keyframes fall { from { transform: translateY(-20%); opacity: 1; } to { transform: translateY(120%); opacity: 0; } }*/
+		@keyframes fall { from { transform: translateY(0px); opacity: 1; } to { transform: translateY(200px); opacity: 0; } }
     </style>
 </head>
 <body class="bg-black text-gray-100 overflow-hidden">
 
     <div id="dashboard-container" class="relative w-full h-screen p-4">
-
-        <div id="weather-widget" class="widget rounded-xl w-72">
-            <div class="widget-header flex items-center p-3 border-b border-white/20">
-                <div class="icon-container w-6 h-6 mr-3 flex items-center justify-center">
-                     <svg class="text-blue-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
-                </div>
-                <span class="title-text font-semibold">Weather</span>
-            </div>
-            <div class="widget-content p-4">
-                <div id="weather-animation-container"></div>
-                <div class="text-center">
-                    <p id="weather-temp" class="text-4xl font-bold">--°C</p>
-                    <p id="weather-desc" class="text-gray-200">Loading...</p>
-                    <p id="weather-location" class="text-sm mt-1">Manila, PH</p>
-                </div>
-                <div id="weather-forecast" class="mt-4 space-y-2"></div>
-            </div>
-        </div>
-
-        <div id="clock-widget" class="widget rounded-xl w-72">
-            <div class="widget-header flex items-center p-3 border-b border-white/20">
-                <div class="icon-container w-6 h-6 mr-3"><svg class="text-green-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-                <span class="title-text font-semibold">Clock & Date</span>
-            </div>
-            <div class="widget-content p-4 flex flex-col items-center">
-                <div class="clock-face mb-4 bg-black/20"><div class="hand hour-hand"></div><div class="hand minute-hand"></div><div class="hand second-hand"></div><div class="clock-center"></div></div>
-                <p id="current-date" class="font-medium text-lg"></p>
-            </div>
-        </div>
-
-        <div id="calendar-widget" class="widget rounded-xl w-80">
-            <div class="widget-header flex items-center p-3 border-b border-white/20">
-                <div class="icon-container w-6 h-6 mr-3"><svg class="text-purple-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg></div>
-                <span class="title-text font-semibold">Calendar</span>
-            </div>
-            <div class="widget-content p-4">
-                <div class="flex justify-between items-center mb-2"><button id="prev-month" class="p-1 rounded-full hover:bg-white/20">&lt;</button><h3 id="month-year" class="font-semibold text-lg"></h3><button id="next-month" class="p-1 rounded-full hover:bg-white/20">&gt;</button></div>
-                <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center"></div>
-                <div id="event-display-container" class="mt-4"></div>
-            </div>
-        </div>
-        
-        <div id="todo-widget" class="widget rounded-xl w-80">
-            <div class="widget-header flex items-center p-3 border-b border-white/20">
-                <div class="icon-container w-6 h-6 mr-3"><svg class="text-yellow-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div>
-                <span class="title-text font-semibold">Todo List</span>
-            </div>
-            <div class="widget-content p-4">
-                <div class="flex mb-3"><input type="text" id="todo-input" class="flex-grow bg-black/20 text-white placeholder-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Add a new task..."><button id="add-todo-btn" class="bg-yellow-500 text-white font-bold px-4 rounded-r-md hover:bg-yellow-600">+</button></div>
-                <ul id="todo-list" class="space-y-2 max-h-60 overflow-y-auto"></ul>
-            </div>
-        </div>
-
-        <div id="notes-widget" class="widget rounded-xl w-96">
-            <div class="widget-header flex items-center p-3 border-b border-white/20">
-                <div class="icon-container w-6 h-6 mr-3"><svg class="text-yellow-200" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></div>
-                <span class="title-text font-semibold">Sticky Notes</span>
-            </div>
-            <div class="widget-content p-4">
-                <div id="notes-container">
-                    <button id="add-note-btn">+</button>
-                </div>
-            </div>
-        </div>
+        <!-- Widgets will be dynamically inserted here -->
     </div>
 
     <div id="event-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -174,13 +113,48 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const widgets = document.querySelectorAll('.widget');
             const WIDGET_POSITIONS_KEY = 'dashboardWidgetPositions';
             let highestZ = 10;
 
+            /**
+             * Creates a generic widget container.
+             * @param {string} id - The ID for the widget element.
+             * @param {string} iconSVG - The SVG string for the widget's icon.
+             * @param {string} title - The title of the widget.
+             * @param {string[]} classes - An array of TailwindCSS classes for sizing (e.g., ['w-72']).
+             * @returns {{widget: HTMLElement, content: HTMLElement}} - The widget element and its content container.
+             */
+            function createWidget(id, iconSVG, title, classes = []) {
+                const widget = document.createElement('div');
+                widget.id = id;
+                widget.className = `widget rounded-xl ${classes.join(' ')}`;
+
+                const header = document.createElement('div');
+                header.className = 'widget-header flex items-center p-3 border-b border-white/20';
+                
+                const iconContainer = document.createElement('div');
+                iconContainer.className = 'icon-container w-6 h-6 mr-3 flex items-center justify-center';
+                iconContainer.innerHTML = iconSVG;
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'title-text font-semibold';
+                titleSpan.textContent = title;
+
+                header.appendChild(iconContainer);
+                header.appendChild(titleSpan);
+
+                const content = document.createElement('div');
+                content.className = 'widget-content p-4 relative h-full'; // Added relative and h-full
+
+                widget.appendChild(header);
+                widget.appendChild(content);
+
+                return { widget, content };
+            }
+
             function saveWidgetPositions() {
                 const positions = {};
-                widgets.forEach(widget => {
+                document.querySelectorAll('.widget').forEach(widget => {
                     positions[widget.id] = { left: widget.style.left, top: widget.style.top };
                 });
                 localStorage.setItem(WIDGET_POSITIONS_KEY, JSON.stringify(positions));
@@ -203,7 +177,7 @@
             
             function applyDefaultLayout() {
                 let topOffset = 20;
-                widgets.forEach(widget => {
+                document.querySelectorAll('.widget').forEach(widget => {
                     widget.classList.add('minimized');
                     widget.style.left = '20px';
                     widget.style.top = `${topOffset}px`;
@@ -211,14 +185,14 @@
                 });
             }
 
-            widgets.forEach(widget => {
+            function applyCoreWidgetFunctionality(widget) {
                 const header = widget.querySelector('.widget-header');
                 let activeWidget = null;
                 let offsetX = 0, offsetY = 0;
                 let didDrag = false;
 
                 const onMouseDown = (e) => {
-                    if (e.target.closest('button, input, .sticky-note')) return;
+                    if (e.target.closest('button, input, .sticky-note, [contenteditable]')) return;
                     if (e.button !== 0 && e.type !== 'touchstart') return;
                     
                     highestZ++;
@@ -276,93 +250,121 @@
                 header.addEventListener('mousedown', onMouseDown);
                 header.addEventListener('touchstart', onMouseDown);
                 header.addEventListener('click', toggleMinimize);
-            });
+            }
 
             // --- Long Press Context Menu ---
-            const dashboardContainer = document.getElementById('dashboard-container');
-            const contextMenu = document.getElementById('context-menu-container');
-            const resetBtn = document.getElementById('reset-widgets-btn');
-            const collapseAllBtn = document.getElementById('collapse-all-btn');
-            let longPressTimer;
-            let startX, startY;
+            function initContextMenu() {
+                const dashboardContainer = document.getElementById('dashboard-container');
+                const contextMenu = document.getElementById('context-menu-container');
+                const resetBtn = document.getElementById('reset-widgets-btn');
+                const collapseAllBtn = document.getElementById('collapse-all-btn');
+                let longPressTimer;
+                let startX, startY;
 
-            function showContextMenu() { 
-                contextMenu.style.display = 'flex'; 
+                function showContextMenu() { contextMenu.style.display = 'flex'; }
+                function hideContextMenu() { contextMenu.style.display = 'none'; }
+
+                dashboardContainer.addEventListener('mousedown', e => {
+                    if (e.target !== dashboardContainer) return;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    longPressTimer = setTimeout(showContextMenu, 500);
+                });
+                dashboardContainer.addEventListener('mouseup', () => clearTimeout(longPressTimer));
+                dashboardContainer.addEventListener('mousemove', e => {
+                    if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
+                        clearTimeout(longPressTimer);
+                    }
+                });
+                
+                dashboardContainer.addEventListener('touchstart', e => {
+                    if (e.target !== dashboardContainer) return;
+                    const touch = e.touches[0];
+                    startX = touch.clientX;
+                    startY = touch.clientY;
+                    longPressTimer = setTimeout(showContextMenu, 500);
+                });
+                dashboardContainer.addEventListener('touchend', () => clearTimeout(longPressTimer));
+                dashboardContainer.addEventListener('touchmove', e => {
+                    const touch = e.touches[0];
+                    if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) {
+                        clearTimeout(longPressTimer);
+                    }
+                });
+
+                contextMenu.addEventListener('click', (e) => {
+                    if (e.target === contextMenu) hideContextMenu();
+                });
+                resetBtn.addEventListener('click', () => {
+                    localStorage.removeItem(WIDGET_POSITIONS_KEY);
+                    applyDefaultLayout();
+                    hideContextMenu();
+                });
+                collapseAllBtn.addEventListener('click', () => {
+                    document.querySelectorAll('.widget').forEach(w => w.classList.add('minimized'));
+                    hideContextMenu();
+                });
             }
-            function hideContextMenu() { 
-                contextMenu.style.display = 'none'; 
-            }
-
-            dashboardContainer.addEventListener('mousedown', e => {
-                if (e.target !== dashboardContainer) return;
-                startX = e.clientX;
-                startY = e.clientY;
-                longPressTimer = setTimeout(showContextMenu, 500);
-            });
-            dashboardContainer.addEventListener('mouseup', () => clearTimeout(longPressTimer));
-            dashboardContainer.addEventListener('mousemove', e => {
-                if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
-                    clearTimeout(longPressTimer);
-                }
-            });
-            
-            dashboardContainer.addEventListener('touchstart', e => {
-                if (e.target !== dashboardContainer) return;
-                const touch = e.touches[0];
-                startX = touch.clientX;
-                startY = touch.clientY;
-                longPressTimer = setTimeout(showContextMenu, 500);
-            });
-            dashboardContainer.addEventListener('touchend', () => clearTimeout(longPressTimer));
-            dashboardContainer.addEventListener('touchmove', e => {
-                const touch = e.touches[0];
-                if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) {
-                    clearTimeout(longPressTimer);
-                }
-            });
-
-            contextMenu.addEventListener('click', (e) => {
-                if (e.target === contextMenu) hideContextMenu();
-            });
-            resetBtn.addEventListener('click', () => {
-                localStorage.removeItem(WIDGET_POSITIONS_KEY);
-                applyDefaultLayout();
-                hideContextMenu();
-            });
-            collapseAllBtn.addEventListener('click', () => {
-                widgets.forEach(w => w.classList.add('minimized'));
-                hideContextMenu();
-            });
 
             // --- WIDGET INITIALIZATION ---
 
             async function initWeatherWidget() {
-                const tempEl = document.getElementById('weather-temp');
-                const descEl = document.getElementById('weather-desc');
-                const forecastEl = document.getElementById('weather-forecast');
-                const animationContainer = document.getElementById('weather-animation-container');
+                const icon = `<svg class="text-blue-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`;
+                const { widget, content } = createWidget('weather-widget', icon, 'Weather', ['w-72']);
+                
+                content.innerHTML = `
+                    <div class="weather-animation-bg"></div>
+                    <div class="relative z-10 p-4 rounded-lg">
+                        <div class="text-center">
+                            <p id="weather-temp" class="text-4xl font-bold">--°C</p>
+                            <p id="weather-desc" class="text-gray-200">Loading...</p>
+                            <p id="weather-location" class="text-sm mt-1">Manila, PH</p>
+                        </div>
+                        <div id="hourly-forecast" class="flex overflow-x-auto space-x-4 mt-4 pb-2"></div>
+                    </div>`;
+                
+                document.getElementById('dashboard-container').appendChild(widget);
+
+                const tempEl = content.querySelector('#weather-temp');
+                const descEl = content.querySelector('#weather-desc');
+                const hourlyForecastEl = content.querySelector('#hourly-forecast');
+                const animationContainer = content.querySelector('.weather-animation-bg');
                 const lat = 14.5995, lon = 120.9842;
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max&timezone=Asia%2FSingapore`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day&hourly=temperature_2m,weather_code&timezone=Asia%2FSingapore`;
 
                 try {
                     const response = await fetch(url);
                     if (!response.ok) throw new Error('Weather data not available');
                     const data = await response.json();
+                    
                     const temp = Math.round(data.current.temperature_2m);
                     const weatherCode = data.current.weather_code;
                     tempEl.textContent = `${temp}°C`;
                     descEl.textContent = getWeatherDescription(weatherCode);
                     updateWeatherAnimation(weatherCode, animationContainer);
 
-                    forecastEl.innerHTML = '';
-                    const dailyTime = data.daily.time;
-                    for (let i = 1; i <= 3; i++) {
-                        const day = document.createElement('div');
-                        const dayName = new Date(dailyTime[i]).toLocaleDateString(undefined, { weekday: 'short' });
-                        day.className = 'flex justify-between items-center text-sm';
-                        day.innerHTML = `<span>${dayName}</span><span>${Math.round(data.daily.temperature_2m_max[i])}°C</span>`;
-                        forecastEl.appendChild(day);
+                    // Hourly Forecast
+                    hourlyForecastEl.innerHTML = '';
+                    const now = new Date();
+                    const currentHour = now.getHours();
+                    const startIndex = data.hourly.time.findIndex(time => new Date(time).getHours() >= currentHour);
+
+                    for (let i = startIndex; i < startIndex + 8; i++) {
+                        const hourData = {
+                            time: new Date(data.hourly.time[i]).getHours(),
+                            temp: Math.round(data.hourly.temperature_2m[i]),
+                            code: data.hourly.weather_code[i]
+                        };
+                        const hourEl = document.createElement('div');
+                        hourEl.className = 'flex flex-col items-center space-y-1 flex-shrink-0';
+                        hourEl.innerHTML = `
+                            <span class="text-xs">${hourData.time % 12 === 0 ? 12 : hourData.time % 12}${hourData.time < 12 ? 'am' : 'pm'}</span>
+                            <div class="w-8 h-8">${getWeatherIcon(hourData.code, data.current.is_day)}</div>
+                            <span class="font-bold text-sm">${hourData.temp}°</span>
+                        `;
+                        hourlyForecastEl.appendChild(hourEl);
                     }
+
                 } catch (error) {
                     console.error("Failed to fetch weather:", error);
                     descEl.textContent = 'Could not load data';
@@ -373,30 +375,56 @@
                 const descriptions = { 0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Rime fog", 51: "Light drizzle", 53: "Drizzle", 55: "Dense drizzle", 61: "Slight rain", 63: "Rain", 65: "Heavy rain", 80: "Showers", 81: "Rain showers", 82: "Violent showers", 95: "Thunderstorm" };
                 return descriptions[code] || "Clear";
             }
+            
+            function getWeatherIcon(code, isDay = 1) {
+                // Simplified icon mapping
+                if (code <= 1) return isDay ? '☀️' : '🌙';
+                if (code <= 3) return '☁️';
+                if (code >= 51 && code <= 65) return '🌧️';
+                if (code >= 80 && code <= 82) return '🌦️';
+                if (code >= 95) return '⛈️';
+                return '🌫️'; // Fog
+            }
 
             function updateWeatherAnimation(code, container) {
                 container.innerHTML = '';
                 if (code <= 1) {
-                    container.className = 'weather-sunny';
+                    container.className = 'weather-animation-bg weather-sunny';
                     container.innerHTML = '<div class="sun"></div>';
                 } else if (code <= 3 || code === 45 || code === 48) {
-                    container.className = 'weather-cloudy';
-                    container.innerHTML = '<div class="sun"></div><div class="cloud cloud1"></div><div class="cloud cloud2"></div>';
+                    container.className = 'weather-animation-bg weather-cloudy';
+                    container.innerHTML = '<div class="sun" style="background:#fde047;"></div><div class="cloud cloud1"></div><div class="cloud cloud2"></div>';
                 } else {
-                    container.className = 'weather-rainy';
-                    let html = '<div class="cloud cloud1"></div>';
-                    for (let i = 0; i < 10; i++) {
-                        html += `<div class="rain-drop" style="left: ${Math.random() * 100}%; animation-delay: ${Math.random() * 2}s;"></div>`;
+                    container.className = 'weather-animation-bg weather-rainy';
+                    let html = '<div class="cloud cloud1" style="background:#9ca3af;"></div><div class="cloud cloud2" style="background:#9ca3af;"></div>';
+                    for (let i = 0; i < 20; i++) {
+                        html += `<div class="rain-drop" style="left: ${Math.random() * 100}%; animation-delay: ${Math.random() * 2}s; animation-duration: ${0.5 + Math.random() * 0.5}s;"></div>`;
                     }
                     container.innerHTML = html;
                 }
             }
 
             function initClockWidget() {
-                const hourHand = document.querySelector('.hour-hand');
-                const minuteHand = document.querySelector('.minute-hand');
-                const secondHand = document.querySelector('.second-hand');
-                const dateElement = document.getElementById('current-date');
+                const icon = `<svg class="text-green-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+                const { widget, content } = createWidget('clock-widget', icon, 'Clock & Date', ['w-72']);
+
+                content.classList.add('flex', 'flex-col', 'items-center');
+                content.innerHTML = `
+                    <div class="clock-face mb-4 bg-black/20">
+                        <div class="hand hour-hand"></div>
+                        <div class="hand minute-hand"></div>
+                        <div class="hand second-hand"></div>
+                        <div class="clock-center"></div>
+                    </div>
+                    <p id="current-date" class="font-medium text-lg"></p>`;
+                
+                document.getElementById('dashboard-container').appendChild(widget);
+
+                const hourHand = content.querySelector('.hour-hand');
+                const minuteHand = content.querySelector('.minute-hand');
+                const secondHand = content.querySelector('.second-hand');
+                const dateElement = content.querySelector('#current-date');
+                
                 function setDate() {
                     const now = new Date();
                     secondHand.style.transform = `rotate(${((now.getSeconds() / 60) * 360) + 90}deg)`;
@@ -409,13 +437,27 @@
             }
 
             function initCalendarWidget() {
+                const icon = `<svg class="text-purple-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>`;
+                const { widget, content } = createWidget('calendar-widget', icon, 'Calendar', ['w-80']);
+                
+                content.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <button id="prev-month" class="p-1 rounded-full hover:bg-white/20">&lt;</button>
+                        <h3 id="month-year" class="font-semibold text-lg"></h3>
+                        <button id="next-month" class="p-1 rounded-full hover:bg-white/20">&gt;</button>
+                    </div>
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center"></div>
+                    <div id="event-display-container" class="mt-4"></div>`;
+                
+                document.getElementById('dashboard-container').appendChild(widget);
+
                 const KEY = 'dashboardCalendarEvents';
-                const monthYearEl = document.getElementById('month-year');
-                const grid = document.getElementById('calendar-grid');
-                const prevBtn = document.getElementById('prev-month');
-                const nextBtn = document.getElementById('next-month');
-                const display = document.getElementById('event-display-container');
-                const modal = document.getElementById('event-modal');
+                const monthYearEl = content.querySelector('#month-year');
+                const grid = content.querySelector('#calendar-grid');
+                const prevBtn = content.querySelector('#prev-month');
+                const nextBtn = content.querySelector('#next-month');
+                const display = content.querySelector('#event-display-container');
+                const modal = document.getElementById('event-modal'); // Modal is global
                 const input = document.getElementById('event-input');
                 const saveBtn = document.getElementById('save-event-btn');
                 const cancelBtn = document.getElementById('cancel-event-btn');
@@ -423,9 +465,7 @@
                 let selectedStr = null;
                 let events = JSON.parse(localStorage.getItem(KEY)) || {};
 
-                function save() {
-                    localStorage.setItem(KEY, JSON.stringify(events));
-                }
+                function save() { localStorage.setItem(KEY, JSON.stringify(events)); }
 
                 function render() {
                     grid.innerHTML = '';
@@ -533,10 +573,22 @@
             }
 
             function initTodoListWidget() {
+                const icon = `<svg class="text-yellow-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>`;
+                const { widget, content } = createWidget('todo-widget', icon, 'Todo List', ['w-80']);
+
+                content.innerHTML = `
+                    <div class="flex mb-3">
+                        <input type="text" id="todo-input" class="flex-grow bg-black/20 text-white placeholder-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Add a new task...">
+                        <button id="add-todo-btn" class="bg-yellow-500 text-white font-bold px-4 rounded-r-md hover:bg-yellow-600">+</button>
+                    </div>
+                    <ul id="todo-list" class="space-y-2 max-h-60 overflow-y-auto"></ul>`;
+                
+                document.getElementById('dashboard-container').appendChild(widget);
+
                 const KEY = 'dashboardTodoItems';
-                const input = document.getElementById('todo-input');
-                const addBtn = document.getElementById('add-todo-btn');
-                const list = document.getElementById('todo-list');
+                const input = content.querySelector('#todo-input');
+                const addBtn = content.querySelector('#add-todo-btn');
+                const list = content.querySelector('#todo-list');
 
                 function save() {
                     const items = [];
@@ -609,9 +661,15 @@
             }
 
             function initNotesWidget() {
+                const icon = `<svg class="text-yellow-200" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>`;
+                const { widget, content } = createWidget('notes-widget', icon, 'Sticky Notes', ['w-96']);
+                
+                content.innerHTML = `<div id="notes-container"><button id="add-note-btn">+</button></div>`;
+                document.getElementById('dashboard-container').appendChild(widget);
+
                 const NOTES_KEY = 'dashboardStickyNotes';
-                const container = document.getElementById('notes-container');
-                const addBtn = document.getElementById('add-note-btn');
+                const container = content.querySelector('#notes-container');
+                const addBtn = content.querySelector('#add-note-btn');
                 let notes = JSON.parse(localStorage.getItem(NOTES_KEY)) || [];
 
                 function saveNotes() {
@@ -647,10 +705,9 @@
                         }
                     });
 
-                    // Dragging logic for notes
                     let activeNote = null, offsetX = 0, offsetY = 0;
                     noteEl.addEventListener('mousedown', (e) => {
-                        e.stopPropagation(); // Prevent widget from dragging
+                        e.stopPropagation();
                         activeNote = noteEl;
                         offsetX = e.clientX - activeNote.offsetLeft;
                         offsetY = e.clientY - activeNote.offsetTop;
@@ -660,10 +717,8 @@
                     
                     function onNoteMove(e) {
                         if (!activeNote) return;
-                        let newX = e.clientX - offsetX;
-                        let newY = e.clientY - offsetY;
-                        activeNote.style.left = `${newX}px`;
-                        activeNote.style.top = `${newY}px`;
+                        activeNote.style.left = `${e.clientX - offsetX}px`;
+                        activeNote.style.top = `${e.clientY - offsetY}px`;
                     }
 
                     function onNoteUp() {
@@ -684,12 +739,7 @@
 
                 addBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    const newNote = {
-                        id: Date.now(),
-                        content: 'New note...',
-                        left: '20px',
-                        top: '20px'
-                    };
+                    const newNote = { id: Date.now(), content: 'New note...', left: '20px', top: '20px' };
                     notes.push(newNote);
                     saveNotes();
                     createNoteElement(newNote);
@@ -698,12 +748,26 @@
                 notes.forEach(createNoteElement);
             }
 
-            loadWidgetPositions();
-            initClockWidget();
-            initCalendarWidget();
-            initWeatherWidget();
-            initTodoListWidget();
-            initNotesWidget();
+            // --- Main Execution ---
+            async function main() {
+                // Create all widgets first
+                await initWeatherWidget();
+                initClockWidget();
+                initCalendarWidget();
+                initTodoListWidget();
+                initNotesWidget();
+
+                // Then apply core functionality to all of them
+                document.querySelectorAll('.widget').forEach(applyCoreWidgetFunctionality);
+                
+                // Then initialize the context menu
+                initContextMenu();
+
+                // Finally, load their positions
+                loadWidgetPositions();
+            }
+
+            main();
         });
     </script>
 
