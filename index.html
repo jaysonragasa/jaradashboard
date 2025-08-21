@@ -21,217 +21,151 @@
 
         .widget {
             position: absolute;
-            /* Glassmorphism effect */
             background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.3);
-            
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            /* Make transitions specific to avoid affecting 'top' and 'left' during drag */
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, width 0.3s ease-in-out, height 0.3s ease-in-out;
             z-index: 10;
         }
 
         .dark .widget {
-             background: rgba(17, 24, 39, 0.4); /* dark bg with transparency */
+             background: rgba(17, 24, 39, 0.4);
              border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .widget-header {
-            cursor: move; /* Grab cursor for dragging */
-            user-select: none; /* Prevent text selection when dragging */
+            cursor: move;
+            user-select: none;
         }
         
         .widget.dragging {
-            /* z-index is handled by JS now */
             transform: scale(1.02);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            /* No transition during drag for immediate response */
             transition: none;
         }
 
-        /* Minimized state */
-        .widget.minimized {
-            width: 64px;
-            height: 64px;
+        .widget.minimized { width: 64px; height: 64px; overflow: hidden; }
+        .widget.minimized .widget-content, .widget.minimized .widget-header .title-text { display: none; }
+        .widget.minimized .widget-header .icon-container { margin: 0; }
+
+        .clock-face { width: 150px; height: 150px; border: 2px solid rgba(255, 255, 255, 0.5); border-radius: 50%; position: relative; }
+        .hand { width: 50%; position: absolute; top: 50%; transform-origin: 100%; transform: rotate(90deg); transition: transform 0.05s cubic-bezier(0.4, 2.08, 0.55, 0.44); }
+        .hour-hand { height: 4px; background: #ffffff; width: 30%; left: 20%; }
+        .minute-hand { height: 3px; background: #ffffff; width: 40%; left: 10%; }
+        .second-hand { height: 1px; background: #ef4444; width: 45%; left: 5%; }
+        .clock-center { width: 8px; height: 8px; background: #ffffff; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; }
+
+        .todo-item { cursor: pointer; }
+        .todo-item.completed span { text-decoration: line-through; color: #d1d5db; }
+        .delete-btn { visibility: hidden; opacity: 0; transition: opacity 0.2s ease-in-out; }
+        .todo-item:hover .delete-btn { visibility: visible; opacity: 1; }
+        .todo-item.dragging { opacity: 0.5; }
+
+        .day-cell { position: relative; }
+        .event-indicator { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; background-color: #ef4444; border-radius: 50%; }
+        .day-cell.selected { background-color: rgba(59, 130, 246, 0.5); }
+        .day-cell.today { border: 1px solid rgba(255, 255, 255, 0.8); }
+        #event-modal { display: none; }
+
+        /* Weather Animations */
+        #weather-animation-container {
+            position: relative;
+            width: 100%;
+            height: 80px;
+            margin-bottom: 1rem;
             overflow: hidden;
         }
-
-        .widget.minimized .widget-content {
-            display: none;
-        }
-
-        .widget.minimized .widget-header .title-text {
-            display: none;
-        }
-        
-        .widget.minimized .widget-header .icon {
-            margin: 0;
-        }
-
-        /* Analog clock styles */
-        .clock-face {
-            width: 150px;
-            height: 150px;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
-            position: relative;
-        }
-
-        .hand {
-            width: 50%;
-            position: absolute;
-            top: 50%;
-            transform-origin: 100%;
-            transform: rotate(90deg);
-            transition: transform 0.05s cubic-bezier(0.4, 2.08, 0.55, 0.44);
-        }
-
-        .hour-hand {
-            height: 4px;
-            background: #ffffff; /* White */
-            width: 30%;
-            left: 20%;
-        }
-
-        .minute-hand {
-            height: 3px;
-            background: #ffffff; /* White */
-            width: 40%;
-            left: 10%;
-        }
-
-        .second-hand {
-            height: 1px;
-            background: #ef4444; /* red-500 */
-            width: 45%;
-            left: 5%;
-        }
-        
-        .clock-center {
-            width: 8px;
-            height: 8px;
-            background: #ffffff;
-            border-radius: 50%;
+        .sun {
             position: absolute;
             top: 50%;
             left: 50%;
+            width: 50%; /* Relative size */
+            padding-bottom: 50%; /* Maintain aspect ratio */
+            background: #facc15;
+            border-radius: 50%;
             transform: translate(-50%, -50%);
-            z-index: 100;
         }
-
-        /* Todo list styles */
-        .todo-item {
-            cursor: pointer;
-        }
-        .todo-item.completed span {
-            text-decoration: line-through;
-            color: #d1d5db; /* gray-300 */
-        }
-        .delete-btn {
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.2s ease-in-out;
-        }
-        .todo-item:hover .delete-btn {
-            visibility: visible;
-            opacity: 1;
-        }
+        .weather-sunny .sun { animation: spin 10s linear infinite; }
+        .cloud { position: absolute; background: #e5e7eb; border-radius: 20px; }
+        .cloud1 { width: 60%; height: 40%; top: 20%; left: -10%; animation: drift 15s linear infinite alternate; }
+        .cloud2 { width: 50%; height: 30%; top: 50%; left: 50%; animation: drift 20s linear infinite alternate; }
+        .rain-drop { position: absolute; width: 1px; height: 15%; background: #9ca3af; animation: fall 1s linear infinite; }
+        
+        @keyframes spin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes drift { from { transform: translateX(-20%); } to { transform: translateX(20%); } }
+        @keyframes fall { from { transform: translateY(-20%); opacity: 1; } to { transform: translateY(120%); opacity: 0; } }
     </style>
 </head>
 <body class="bg-black text-gray-100 overflow-hidden">
 
-    <!-- Dashboard Container -->
     <div id="dashboard-container" class="relative w-full h-screen p-4">
 
-        <!-- Widget 1: Weather -->
-        <div id="weather-widget" class="widget rounded-xl w-72" style="top: 20px; left: 20px;">
+        <div id="weather-widget" class="widget rounded-xl w-72">
             <div class="widget-header flex items-center p-3 border-b border-white/20">
-                <svg class="icon w-6 h-6 mr-3 text-blue-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+                <div class="icon-container w-6 h-6 mr-3 flex items-center justify-center">
+                     <svg class="text-blue-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+                </div>
                 <span class="title-text font-semibold">Weather</span>
             </div>
             <div class="widget-content p-4">
+                <div id="weather-animation-container"></div>
                 <div class="text-center">
-                    <p class="text-4xl font-bold">25°C</p>
-                    <p class="text-gray-200">Partly Cloudy</p>
-                    <p class="text-sm mt-1">Manila, PH</p>
+                    <p id="weather-temp" class="text-4xl font-bold">--°C</p>
+                    <p id="weather-desc" class="text-gray-200">Loading...</p>
+                    <p id="weather-location" class="text-sm mt-1">Manila, PH</p>
                 </div>
-                <div class="mt-4 space-y-2">
-                    <div class="flex justify-between items-center"><span>Mon</span><span>26°C</span></div>
-                    <div class="flex justify-between items-center"><span>Tue</span><span>28°C</span></div>
-                    <div class="flex justify-between items-center"><span>Wed</span><span>27°C</span></div>
-                </div>
+                <div id="weather-forecast" class="mt-4 space-y-2"></div>
             </div>
         </div>
 
-        <!-- Widget 2: Clock & Date -->
-        <div id="clock-widget" class="widget rounded-xl w-72" style="top: 20px; left: 320px;">
+        <div id="clock-widget" class="widget rounded-xl w-72">
             <div class="widget-header flex items-center p-3 border-b border-white/20">
-                <svg class="icon w-6 h-6 mr-3 text-green-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <div class="icon-container w-6 h-6 mr-3"><svg class="text-green-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
                 <span class="title-text font-semibold">Clock & Date</span>
             </div>
             <div class="widget-content p-4 flex flex-col items-center">
-                <div class="clock-face mb-4 bg-black/20">
-                    <div class="hand hour-hand"></div>
-                    <div class="hand minute-hand"></div>
-                    <div class="hand second-hand"></div>
-                    <div class="clock-center"></div>
-                </div>
+                <div class="clock-face mb-4 bg-black/20"><div class="hand hour-hand"></div><div class="hand minute-hand"></div><div class="hand second-hand"></div><div class="clock-center"></div></div>
                 <p id="current-date" class="font-medium text-lg"></p>
             </div>
         </div>
 
-        <!-- Widget 3: Calendar -->
-        <div id="calendar-widget" class="widget rounded-xl w-80" style="top: 20px; left: 620px;">
+        <div id="calendar-widget" class="widget rounded-xl w-80">
             <div class="widget-header flex items-center p-3 border-b border-white/20">
-                <svg class="icon w-6 h-6 mr-3 text-purple-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                <div class="icon-container w-6 h-6 mr-3"><svg class="text-purple-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg></div>
                 <span class="title-text font-semibold">Calendar</span>
             </div>
             <div class="widget-content p-4">
-                <div class="flex justify-between items-center mb-2">
-                    <button id="prev-month" class="p-1 rounded-full hover:bg-white/20">&lt;</button>
-                    <h3 id="month-year" class="font-semibold text-lg"></h3>
-                    <button id="next-month" class="p-1 rounded-full hover:bg-white/20">&gt;</button>
-                </div>
+                <div class="flex justify-between items-center mb-2"><button id="prev-month" class="p-1 rounded-full hover:bg-white/20">&lt;</button><h3 id="month-year" class="font-semibold text-lg"></h3><button id="next-month" class="p-1 rounded-full hover:bg-white/20">&gt;</button></div>
                 <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center"></div>
+                <div id="event-display-container" class="mt-4"></div>
             </div>
         </div>
         
-        <!-- Widget 4: Todo List -->
-        <div id="todo-widget" class="widget rounded-xl w-80" style="top: 350px; left: 20px;">
+        <div id="todo-widget" class="widget rounded-xl w-80">
             <div class="widget-header flex items-center p-3 border-b border-white/20">
-                <svg class="icon w-6 h-6 mr-3 text-yellow-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                <div class="icon-container w-6 h-6 mr-3"><svg class="text-yellow-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div>
                 <span class="title-text font-semibold">Todo List</span>
             </div>
             <div class="widget-content p-4">
-                <div class="flex mb-3">
-                    <input type="text" id="todo-input" class="flex-grow bg-black/20 text-white placeholder-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Add a new task...">
-                    <button id="add-todo-btn" class="bg-yellow-500 text-white font-bold px-4 rounded-r-md hover:bg-yellow-600">+</button>
-                </div>
-                <ul id="todo-list" class="space-y-2 max-h-60 overflow-y-auto">
-                    <!-- Todo items will be generated here -->
-                </ul>
+                <div class="flex mb-3"><input type="text" id="todo-input" class="flex-grow bg-black/20 text-white placeholder-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Add a new task..."><button id="add-todo-btn" class="bg-yellow-500 text-white font-bold px-4 rounded-r-md hover:bg-yellow-600">+</button></div>
+                <ul id="todo-list" class="space-y-2 max-h-60 overflow-y-auto"></ul>
             </div>
         </div>
+    </div>
 
+    <div id="event-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-gray-800 p-6 rounded-lg shadow-xl w-96"><h3 class="text-lg font-bold mb-4">Add Event</h3><input type="text" id="event-input" class="w-full bg-gray-700 text-white rounded-md p-2 mb-4 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="Event details..."><div class="flex justify-end space-x-2"><button id="cancel-event-btn" class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-500">Cancel</button><button id="save-event-btn" class="px-4 py-2 bg-purple-500 rounded-md hover:bg-purple-600">Save</button></div></div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- CORE WIDGET FUNCTIONALITY ---
             const widgets = document.querySelectorAll('.widget');
             const WIDGET_POSITIONS_KEY = 'dashboardWidgetPositions';
-            let highestZ = 10; // Start with the base z-index
+            let highestZ = 10;
 
-            function saveWidgetPositions() {
-                const positions = {};
-                widgets.forEach(widget => {
-                    positions[widget.id] = { left: widget.style.left, top: widget.style.top };
-                });
-                localStorage.setItem(WIDGET_POSITIONS_KEY, JSON.stringify(positions));
-            }
-
+            function saveWidgetPositions() { /* ... */ }
             function loadWidgetPositions() {
                 const savedPositions = JSON.parse(localStorage.getItem(WIDGET_POSITIONS_KEY));
                 if (savedPositions) {
@@ -242,219 +176,98 @@
                             widget.style.top = savedPositions[id].top;
                         }
                     });
+                } else {
+                    applyDefaultLayout();
                 }
             }
             
-            widgets.forEach(widget => {
-                const header = widget.querySelector('.widget-header');
-                let activeWidget = null;
-                let offsetX = 0, offsetY = 0;
-                let didDrag = false;
-
-                const onMouseDown = (e) => {
-                    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
-                    if (e.button !== 0 && e.type !== 'touchstart') return;
-                    
-                    // Bring widget to front
-                    highestZ++;
-                    widget.style.zIndex = highestZ;
-
-                    didDrag = false;
-                    activeWidget = widget;
-                    activeWidget.classList.add('dragging');
-                    
-                    const touch = e.type === 'touchstart' ? e.touches[0] : e;
-                    const rect = activeWidget.getBoundingClientRect();
-                    offsetX = touch.clientX - rect.left;
-                    offsetY = touch.clientY - rect.top;
-
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                    document.addEventListener('touchmove', onMouseMove, { passive: false });
-                    document.addEventListener('touchend', onMouseUp);
-                };
-
-                const onMouseMove = (e) => {
-                    if (!activeWidget) return;
-                    didDrag = true;
-                    e.preventDefault();
-                    
-                    const touch = e.type === 'touchmove' ? e.touches[0] : e;
-                    let newX = touch.clientX - offsetX;
-                    let newY = touch.clientY - offsetY;
-
-                    const container = document.getElementById('dashboard-container');
-                    const containerRect = container.getBoundingClientRect();
-                    const widgetRect = activeWidget.getBoundingClientRect();
-                    newX = Math.max(0, Math.min(newX, containerRect.width - widgetRect.width));
-                    newY = Math.max(0, Math.min(newY, containerRect.height - widgetRect.height));
-
-                    activeWidget.style.left = `${newX}px`;
-                    activeWidget.style.top = `${newY}px`;
-                };
-
-                const onMouseUp = () => {
-                    if (!activeWidget) return;
-                    activeWidget.classList.remove('dragging');
-                    if (didDrag) {
-                        saveWidgetPositions();
-                    }
-                    activeWidget = null;
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                    document.removeEventListener('touchmove', onMouseMove);
-                    document.removeEventListener('touchend', onMouseUp);
-                };
-                
-                const toggleMinimize = (e) => {
-                    if (didDrag) return;
-                    if (e.target.closest('.widget-header')) {
-                        widget.classList.toggle('minimized');
-                    }
-                };
-
-                header.addEventListener('mousedown', onMouseDown);
-                header.addEventListener('touchstart', onMouseDown);
-                header.addEventListener('click', toggleMinimize);
-            });
-
-            // --- WIDGET-SPECIFIC MODULES ---
-
-            function initClockWidget() {
-                const hourHand = document.querySelector('.hour-hand');
-                const minuteHand = document.querySelector('.minute-hand');
-                const secondHand = document.querySelector('.second-hand');
-                const dateElement = document.getElementById('current-date');
-
-                function setDate() {
-                    const now = new Date();
-                    const seconds = now.getSeconds();
-                    secondHand.style.transform = `rotate(${((seconds / 60) * 360) + 90}deg)`;
-                    const minutes = now.getMinutes();
-                    minuteHand.style.transform = `rotate(${((minutes / 60) * 360) + ((seconds/60)*6) + 90}deg)`;
-                    const hours = now.getHours();
-                    hourHand.style.transform = `rotate(${(((hours % 12) / 12) * 360) + ((minutes/60)*30) + 90}deg)`;
-                    dateElement.textContent = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                }
-                setInterval(setDate, 1000);
-                setDate();
-            }
-
-            function initCalendarWidget() {
-                const monthYearElement = document.getElementById('month-year');
-                const calendarGrid = document.getElementById('calendar-grid');
-                const prevMonthBtn = document.getElementById('prev-month');
-                const nextMonthBtn = document.getElementById('next-month');
-                let currentDate = new Date();
-
-                function renderCalendar() {
-                    calendarGrid.innerHTML = '';
-                    const year = currentDate.getFullYear();
-                    const month = currentDate.getMonth();
-                    monthYearElement.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
-                    const firstDayOfMonth = new Date(year, month, 1).getDay();
-                    const daysInMonth = new Date(year, month + 1, 0).getDate();
-                    
-                    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(day => {
-                        const dayEl = document.createElement('div');
-                        dayEl.textContent = day;
-                        dayEl.className = 'font-bold text-gray-400 text-sm';
-                        calendarGrid.appendChild(dayEl);
-                    });
-
-                    for (let i = 0; i < firstDayOfMonth; i++) calendarGrid.appendChild(document.createElement('div'));
-
-                    for (let day = 1; day <= daysInMonth; day++) {
-                        const dayEl = document.createElement('div');
-                        dayEl.textContent = day;
-                        dayEl.className = 'p-1 cursor-pointer rounded-full hover:bg-blue-500/50';
-                        const today = new Date();
-                        if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-                            dayEl.classList.add('bg-blue-500', 'text-white', 'font-bold');
-                        }
-                        calendarGrid.appendChild(dayEl);
-                    }
-                }
-                prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
-                nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
-                renderCalendar();
-            }
-            
-            function initWeatherWidget() { console.log("Weather widget initialized."); }
-
-            function initTodoListWidget() {
-                const TODO_ITEMS_KEY = 'dashboardTodoItems';
-                const todoInput = document.getElementById('todo-input');
-                const addTodoBtn = document.getElementById('add-todo-btn');
-                const todoList = document.getElementById('todo-list');
-                
-                function saveTodos() {
-                    const items = [];
-                    todoList.querySelectorAll('.todo-item').forEach(itemEl => {
-                        items.push({
-                            text: itemEl.querySelector('span').textContent,
-                            completed: itemEl.classList.contains('completed')
-                        });
-                    });
-                    localStorage.setItem(TODO_ITEMS_KEY, JSON.stringify(items));
-                }
-
-                function createTodoElement({ text, completed }) {
-                    const li = document.createElement('li');
-                    li.className = 'todo-item flex justify-between items-center p-2 rounded-md hover:bg-white/10';
-                    if (completed) li.classList.add('completed');
-
-                    const span = document.createElement('span');
-                    span.textContent = text;
-                    li.appendChild(span);
-
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.textContent = '✕';
-                    deleteBtn.className = 'delete-btn text-red-400 font-bold';
-                    li.appendChild(deleteBtn);
-
-                    // Event listeners
-                    li.addEventListener('click', (e) => {
-                        if (e.target !== deleteBtn) {
-                            li.classList.toggle('completed');
-                            saveTodos();
-                        }
-                    });
-                    deleteBtn.addEventListener('click', () => {
-                        li.remove();
-                        saveTodos();
-                    });
-
-                    todoList.appendChild(li);
-                }
-                
-                function loadTodos() {
-                    const savedTodos = JSON.parse(localStorage.getItem(TODO_ITEMS_KEY)) || [];
-                    savedTodos.forEach(todo => createTodoElement(todo));
-                }
-
-                function addTodo() {
-                    const text = todoInput.value.trim();
-                    if (text) {
-                        createTodoElement({ text, completed: false });
-                        saveTodos();
-                        todoInput.value = '';
-                    }
-                }
-
-                addTodoBtn.addEventListener('click', addTodo);
-                todoInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') addTodo();
+            function applyDefaultLayout() {
+                let topOffset = 20;
+                widgets.forEach(widget => {
+                    widget.classList.add('minimized');
+                    widget.style.left = '20px';
+                    widget.style.top = `${topOffset}px`;
+                    topOffset += 80;
                 });
-
-                loadTodos();
             }
 
-            // --- INITIALIZE ALL WIDGETS AND LOAD POSITIONS ---
+            widgets.forEach(widget => { /* ... core widget dragging and z-index logic ... */ });
+
+            async function initWeatherWidget() {
+                const tempEl = document.getElementById('weather-temp');
+                const descEl = document.getElementById('weather-desc');
+                const forecastEl = document.getElementById('weather-forecast');
+                const animationContainer = document.getElementById('weather-animation-container');
+                
+                const lat = 14.5995, lon = 120.9842;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max&timezone=Asia%2FSingapore`;
+
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('Weather data not available');
+                    const data = await response.json();
+
+                    const temp = Math.round(data.current.temperature_2m);
+                    const weatherCode = data.current.weather_code;
+                    tempEl.textContent = `${temp}°C`;
+                    descEl.textContent = getWeatherDescription(weatherCode);
+                    updateWeatherAnimation(weatherCode, animationContainer);
+
+                    forecastEl.innerHTML = '';
+                    const days = ['Mon', 'Tue', 'Wed'];
+                    for(let i = 0; i < 3; i++) {
+                        const day = document.createElement('div');
+                        day.className = 'flex justify-between items-center text-sm';
+                        day.innerHTML = `<span>${days[i]}</span><span>${Math.round(data.daily.temperature_2m_max[i+1])}°C</span>`;
+                        forecastEl.appendChild(day);
+                    }
+
+                } catch (error) {
+                    console.error("Failed to fetch weather:", error);
+                    descEl.textContent = 'Could not load data';
+                }
+            }
+
+            function getWeatherDescription(code) {
+                const descriptions = { 0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Depositing rime fog", 51: "Light drizzle", 53: "Moderate drizzle", 55: "Dense drizzle", 61: "Slight rain", 63: "Moderate rain", 65: "Heavy rain", 80: "Slight rain showers", 81: "Moderate rain showers", 82: "Violent rain showers", 95: "Thunderstorm" };
+                return descriptions[code] || "Clear";
+            }
+
+            function updateWeatherAnimation(code, container) {
+                container.innerHTML = '';
+                if (code <= 1) { // Sunny / Clear
+                    container.className = 'weather-sunny';
+                    container.innerHTML = '<div class="sun"></div>';
+                } else if (code <= 3 || code === 45 || code === 48) { // Cloudy / Foggy
+                    container.className = 'weather-cloudy';
+                    container.innerHTML = '<div class="sun"></div><div class="cloud cloud1"></div><div class="cloud cloud2"></div>';
+                } else { // Rainy / Drizzle / Showers
+                    container.className = 'weather-rainy';
+                    let rainHTML = '<div class="cloud cloud1"></div>';
+                    for (let i = 0; i < 10; i++) {
+                        rainHTML += `<div class="rain-drop" style="left: ${Math.random() * 100}%; animation-delay: ${Math.random() * 2}s;"></div>`;
+                    }
+                    container.innerHTML = rainHTML;
+                }
+            }
+            
+            function initCalendarWidget() { /* ... unchanged ... */ }
+            function initTodoListWidget() { /* ... unchanged ... */ }
+            function initClockWidget() { /* ... unchanged ... */ }
+
             loadWidgetPositions();
             initClockWidget();
             initCalendarWidget();
             initWeatherWidget();
+            initTodoListWidget();
+            
+            saveWidgetPositions = function() { const pos = {}; widgets.forEach(w => { pos[w.id] = { left: w.style.left, top: w.style.top }; }); localStorage.setItem(WIDGET_POSITIONS_KEY, JSON.stringify(pos)); };
+            widgets.forEach(widget => { const header = widget.querySelector('.widget-header'); let activeWidget = null; let offsetX = 0, offsetY = 0; let didDrag = false; const onMouseDown = (e) => { if (e.target.closest('button, input')) return; if (e.button !== 0 && e.type !== 'touchstart') return; highestZ++; widget.style.zIndex = highestZ; didDrag = false; activeWidget = widget; activeWidget.classList.add('dragging'); const touch = e.type === 'touchstart' ? e.touches[0] : e; const rect = activeWidget.getBoundingClientRect(); offsetX = touch.clientX - rect.left; offsetY = touch.clientY - rect.top; document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp); document.addEventListener('touchmove', onMouseMove, { passive: false }); document.addEventListener('touchend', onMouseUp); }; const onMouseMove = (e) => { if (!activeWidget) return; didDrag = true; e.preventDefault(); const touch = e.type === 'touchmove' ? e.touches[0] : e; let newX = touch.clientX - offsetX; let newY = touch.clientY - offsetY; const container = document.getElementById('dashboard-container'); const containerRect = container.getBoundingClientRect(); const widgetRect = activeWidget.getBoundingClientRect(); newX = Math.max(0, Math.min(newX, containerRect.width - widgetRect.width)); newY = Math.max(0, Math.min(newY, containerRect.height - widgetRect.height)); activeWidget.style.left = `${newX}px`; activeWidget.style.top = `${newY}px`; }; const onMouseUp = () => { if (!activeWidget) return; activeWidget.classList.remove('dragging'); if (didDrag) saveWidgetPositions(); activeWidget = null; document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); document.removeEventListener('touchmove', onMouseMove); document.removeEventListener('touchend', onMouseUp); }; const toggleMinimize = (e) => { if (didDrag) return; if (e.target.closest('.widget-header')) widget.classList.toggle('minimized'); }; header.addEventListener('mousedown', onMouseDown); header.addEventListener('touchstart', onMouseDown); header.addEventListener('click', toggleMinimize); });
+            initClockWidget = function() { const hourHand = document.querySelector('.hour-hand'), minuteHand = document.querySelector('.minute-hand'), secondHand = document.querySelector('.second-hand'), dateElement = document.getElementById('current-date'); function setDate() { const now = new Date(); secondHand.style.transform = `rotate(${((now.getSeconds()/60)*360)+90}deg)`; minuteHand.style.transform = `rotate(${((now.getMinutes()/60)*360)+((now.getSeconds()/60)*6)+90}deg)`; hourHand.style.transform = `rotate(${(((now.getHours()%12)/12)*360)+((now.getMinutes()/60)*30)+90}deg)`; dateElement.textContent = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); } setInterval(setDate, 1000); setDate(); };
+            initCalendarWidget = function() { const KEY = 'dashboardCalendarEvents', monthYearEl = document.getElementById('month-year'), grid = document.getElementById('calendar-grid'), prevBtn = document.getElementById('prev-month'), nextBtn = document.getElementById('next-month'), display = document.getElementById('event-display-container'), modal = document.getElementById('event-modal'), input = document.getElementById('event-input'), saveBtn = document.getElementById('save-event-btn'), cancelBtn = document.getElementById('cancel-event-btn'); let date = new Date(), selectedStr = null, events = JSON.parse(localStorage.getItem(KEY)) || {}; function save() { localStorage.setItem(KEY, JSON.stringify(events)); } function render() { grid.innerHTML = ''; const year = date.getFullYear(), month = date.getMonth(); monthYearEl.textContent = `${date.toLocaleString('default', { month: 'long' })} ${year}`; const firstDay = new Date(year, month, 1).getDay(), daysInMonth = new Date(year, month + 1, 0).getDate(); ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(d => { const el = document.createElement('div'); el.textContent = d; el.className = 'font-bold text-gray-400 text-sm'; grid.appendChild(el); }); for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div')); for (let day = 1; day <= daysInMonth; day++) { const el = document.createElement('div'), dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`; el.textContent = day; el.className = 'day-cell p-1 cursor-pointer rounded-full hover:bg-blue-500/50'; const today = new Date(); if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) el.classList.add('today'); if (events[dateStr] && events[dateStr].length > 0) { const ind = document.createElement('div'); ind.className = 'event-indicator'; el.appendChild(ind); } if (dateStr === selectedStr) el.classList.add('selected'); el.addEventListener('click', () => { selectedStr = dateStr; render(); renderEvents(); }); grid.appendChild(el); } } function renderEvents() { display.innerHTML = ''; if (!selectedStr) return; const evs = events[selectedStr] || []; const title = document.createElement('h4'); title.className = 'font-bold text-md mb-2'; title.textContent = `Events for ${new Date(selectedStr+'T00:00:00').toLocaleDateString(undefined,{month:'long',day:'numeric'})}`; display.appendChild(title); if (evs.length > 0) { const ul = document.createElement('ul'); ul.className = 'space-y-1'; evs.forEach((ev, i) => { const li = document.createElement('li'); li.className = 'text-sm flex justify-between items-center'; li.textContent = ev; const delBtn = document.createElement('button'); delBtn.textContent = '✕'; delBtn.className = 'text-red-400 hover:text-red-300'; delBtn.onclick = () => { events[selectedStr].splice(i, 1); save(); render(); renderEvents(); }; li.appendChild(delBtn); ul.appendChild(li); }); display.appendChild(ul); } else { const p = document.createElement('p'); p.className = 'text-sm text-gray-400'; p.textContent = 'No events.'; display.appendChild(p); } const addBtn = document.createElement('button'); addBtn.textContent = '+ Add Event'; addBtn.className = 'mt-2 w-full text-center bg-white/10 hover:bg-white/20 p-2 rounded-md text-sm'; addBtn.onclick = () => { modal.style.display = 'flex'; input.focus(); }; display.appendChild(addBtn); } saveBtn.addEventListener('click', () => { const txt = input.value.trim(); if (txt && selectedStr) { if (!events[selectedStr]) events[selectedStr] = []; events[selectedStr].push(txt); save(); input.value = ''; modal.style.display = 'none'; render(); renderEvents(); } }); input.addEventListener('keypress', e => { if (e.key === 'Enter') saveBtn.click(); }); cancelBtn.addEventListener('click', () => { modal.style.display = 'none'; }); prevBtn.addEventListener('click', () => { date.setMonth(date.getMonth() - 1); render(); }); nextBtn.addEventListener('click', () => { date.setMonth(date.getMonth() + 1); render(); }); render(); };
+            initTodoListWidget = function() { const KEY = 'dashboardTodoItems', input = document.getElementById('todo-input'), addBtn = document.getElementById('add-todo-btn'), list = document.getElementById('todo-list'); function save() { const items = []; list.querySelectorAll('.todo-item').forEach(el => items.push({ text: el.querySelector('span').textContent, completed: el.classList.contains('completed') })); localStorage.setItem(KEY, JSON.stringify(items)); } function createEl({ text, completed }) { const li = document.createElement('li'); li.className = 'todo-item flex justify-between items-center p-2 rounded-md hover:bg-white/10'; li.setAttribute('draggable', 'true'); if (completed) li.classList.add('completed'); const span = document.createElement('span'); span.textContent = text; li.appendChild(span); const delBtn = document.createElement('button'); delBtn.textContent = '✕'; delBtn.className = 'delete-btn text-red-400 font-bold'; li.appendChild(delBtn); li.addEventListener('click', e => { if (e.target !== delBtn) { li.classList.toggle('completed'); save(); } }); delBtn.addEventListener('click', () => { li.remove(); save(); }); li.addEventListener('dragstart', () => li.classList.add('dragging')); li.addEventListener('dragend', () => { li.classList.remove('dragging'); save(); }); list.appendChild(li); } function load() { const items = JSON.parse(localStorage.getItem(KEY)) || []; list.innerHTML = ''; items.forEach(createEl); } function add() { const text = input.value.trim(); if (text) { createEl({ text, completed: false }); save(); input.value = ''; } } list.addEventListener('dragover', e => { e.preventDefault(); const afterEl = [...list.querySelectorAll('.todo-item:not(.dragging)')].reduce((closest, child) => { const box = child.getBoundingClientRect(), offset = e.clientY - box.top - box.height / 2; return (offset < 0 && offset > closest.offset) ? { offset: offset, element: child } : closest; }, { offset: Number.NEGATIVE_INFINITY }).element; const draggingEl = document.querySelector('.todo-item.dragging'); if (draggingEl) { if (afterEl == null) list.appendChild(draggingEl); else list.insertBefore(draggingEl, afterEl); } }); addBtn.addEventListener('click', add); input.addEventListener('keypress', e => { if (e.key === 'Enter') add(); }); load(); };
+            initClockWidget();
+            initCalendarWidget();
             initTodoListWidget();
         });
     </script>
