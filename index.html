@@ -917,6 +917,116 @@ SOFTWARE.
                 notes.forEach(createNoteElement);
             }
 			
+			// port from BASIC 
+			async function initStarfieldSimulation() {
+				// define an SVG icon
+				const icon = `<svg class="text-indigo-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path><path d="M14 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2h-4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path></svg>`;
+
+				// widget - add the unique widget id and title
+				// I've given the widget a height (h-80) so the canvas has space to display.
+				const {
+					widget,
+					content
+				} = createWidget('starfield-widget', icon, 'Starfield Simulation', ['w-80', 'h-80']);
+
+				// Define the content with a canvas for the starfield.
+				// The inline style ensures it fills the container.
+				content.innerHTML = `<canvas id="starfield-canvas" style="background-color: #000; width: 100%; height: 100%; display: block; border-radius: 0.5rem;"></canvas>`;
+
+				// Get the canvas element from the content we just set
+				const canvas = content.querySelector('#starfield-canvas');
+				if (!canvas) {
+					console.error("Canvas element not found!");
+					return;
+				}
+
+				const ctx = canvas.getContext('2d');
+
+				setTimeout(() => {
+					// Set canvas resolution to its displayed size
+					canvas.width = canvas.offsetWidth;
+					canvas.height = canvas.offsetHeight;
+
+					const numStars = 800;
+					const stars = [];
+					const speed = 0.9; // Controls how fast the stars move towards the viewer
+
+					for (let i = 0; i < numStars; i++) {
+						stars[i] = {
+							x: (Math.random() - 0.5) * canvas.width, // Random x from -width/2 to +width/2
+							y: (Math.random() - 0.5) * canvas.height, // Random y from -height/2 to +height/2
+							z: Math.random() * canvas.width, // Random depth
+						};
+					}
+
+					function animate() {
+						ctx.fillStyle = 'black';
+						ctx.fillRect(0, 0, canvas.width, canvas.height);
+						
+						ctx.save();
+						ctx.translate(canvas.width / 2, canvas.height / 2);
+						
+						for (let i = 0; i < numStars; i++) {
+							const star = stars[i];
+
+							star.z -= speed;
+
+							if (star.z <= 0) {
+								star.x = (Math.random() - 0.5) * canvas.width;
+								star.y = (Math.random() - 0.5) * canvas.height;
+								star.z = canvas.width;
+							}
+
+							const k = 128.0 / star.z;
+							const px = star.x * k;
+							const py = star.y * k;
+
+							const size = (1 - star.z / canvas.width) * 2.5;
+
+							ctx.beginPath();
+							ctx.fillStyle = 'white';
+							ctx.arc(px, py, size, 0, Math.PI * 2);
+							ctx.fill();
+						}
+
+						ctx.restore();
+
+						requestAnimationFrame(animate);
+					}
+
+					animate();
+					
+					const handleResize = () => {
+						// A small delay to ensure the container has finished resizing and to debounce events
+						setTimeout(() => {
+							if (canvas.offsetWidth > 0 && canvas.offsetHeight > 0) {
+								canvas.width = canvas.offsetWidth;
+								canvas.height = canvas.offsetHeight;
+								
+								// Reset star depths based on the new width to maintain perspective
+								for (let i = 0; i < numStars; i++) {
+									stars[i].z = Math.random() * canvas.width;
+								}
+							}
+						}, 100);
+					};
+					
+					// Use ResizeObserver to watch the widget element for size changes
+					if ('ResizeObserver' in window) {
+						const observer = new ResizeObserver(handleResize);
+						observer.observe(widget); // Observe the widget itself
+					} else {
+						// Fallback for older browsers that don't support ResizeObserver
+						window.addEventListener('resize', handleResize);
+					}
+
+
+				}, 0);
+
+				//	do not forget to add this new child to our dashboard-container
+				document.getElementById('dashboard-container').appendChild(widget);
+			}
+
 			/* // comment out initBasicWidget(); in main() function to use this
 			async function initBasicWidget() {
 				// define an SVG icon
@@ -941,7 +1051,9 @@ SOFTWARE.
                 initCalendarWidget();
                 initTodoListWidget();
                 initNotesWidget();
+				initStarfieldSimulation();
 				//initBasicWidget();
+				
 
                 // Then apply core functionality to all of them
                 document.querySelectorAll('.widget').forEach(applyCoreWidgetFunctionality);
