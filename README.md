@@ -184,7 +184,7 @@ async function initQuoteWidget() {
 	}
 }
 ```
-### Here's another very basic of widget 
+### Here's another very basic of a widget 
 ```javascript
 async function initAboutWidget() {
 	// define an SVG icon
