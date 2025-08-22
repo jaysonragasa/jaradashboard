@@ -26,7 +26,6 @@
             -webkit-backdrop-filter: blur(9px);
 			border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.3);
-            /*box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);*/
 			box-shadow: 
 				0 8px 32px rgba(0, 0, 0, 0.3),
 				inset 0 1px 0 rgba(255, 255, 255, 0.5),
@@ -34,7 +33,10 @@
 				inset 0 0 14px 7px rgba(255, 255, 255, 0.1);
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, width 0.3s ease-in-out, height 0.3s ease-in-out;
             z-index: 10;
-            overflow: hidden; /* Contain the animation background */
+            overflow: hidden; /* Changed from auto to hidden */
+            resize: both; /* Make widgets resizable */
+            min-width: 280px; /* Prevent widgets from becoming too small */
+            min-height: 200px;
         }
 		
 		.widget::before {
@@ -67,55 +69,6 @@
 		  );
 		}
 		
-		/*
-		.glass-card {
-		  width: 240px;
-		  height: 360px;
-		  background: rgba(255, 255, 255, 0.4);
-		  backdrop-filter: blur(8px);
-		  -webkit-backdrop-filter: blur(8px);
-		  border-radius: 20px;
-		  border: 1px solid rgba(255, 255, 255, 0.3);
-		  box-shadow: 
-			0 8px 32px rgba(0, 0, 0, 0.1),
-			inset 0 1px 0 rgba(255, 255, 255, 0.5),
-			inset 0 -1px 0 rgba(255, 255, 255, 0.1),
-			inset 0 0 14px 7px rgba(255, 255, 255, 0.7);
-		  position: relative;
-		  overflow: hidden;
-		}
-
-		.glass-card::before {
-		  content: '';
-		  position: absolute;
-		  top: 0;
-		  left: 0;
-		  right: 0;
-		  height: 1px;
-		  background: linear-gradient(
-			90deg,
-			transparent,
-			rgba(255, 255, 255, 0.8),
-			transparent
-		  );
-		}
-
-		.glass-card::after {
-		  content: '';
-		  position: absolute;
-		  top: 0;
-		  left: 0;
-		  width: 1px;
-		  height: 100%;
-		  background: linear-gradient(
-			180deg,
-			rgba(255, 255, 255, 0.8),
-			transparent,
-			rgba(255, 255, 255, 0.3)
-		  );
-		}
-		*/
-		
         .dark .widget {
              background: rgba(17, 24, 39, 0.1);
              border: 1px solid rgba(255, 255, 255, 0.1);
@@ -132,7 +85,14 @@
             transition: none;
         }
 
-        .widget.minimized { width: 64px; height: 64px; overflow: hidden; }
+        .widget.minimized { 
+            width: 64px !important; /* Use !important to override inline styles */
+            height: 64px !important; 
+            min-width: 64px; /* Override the min-width */
+            min-height: 64px; /* Override the min-height */
+            overflow: hidden; 
+            resize: none; /* Disable resizing when minimized */
+        }
         .widget.minimized .widget-content, .widget.minimized .widget-header .title-text { display: none; }
         .widget.minimized .widget-header .icon-container { margin: 0; }
 
@@ -174,8 +134,7 @@
 
         @keyframes spin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
         @keyframes drift { from { transform: translateX(-30%); } to { transform: translateX(30%); } }
-        /*@keyframes fall { from { transform: translateY(-20%); opacity: 1; } to { transform: translateY(120%); opacity: 0; } }*/
-		@keyframes fall { from { transform: translateY(0px); opacity: 1; } to { transform: translateY(200px); opacity: 0; } }
+        @keyframes fall { from { transform: translateY(0px); opacity: 1; } to { transform: translateY(200px); opacity: 0; } }
     </style>
 </head>
 <body class="bg-black text-gray-100 overflow-hidden">
@@ -240,7 +199,13 @@
             function saveWidgetPositions() {
                 const positions = {};
                 document.querySelectorAll('.widget').forEach(widget => {
-                    positions[widget.id] = { left: widget.style.left, top: widget.style.top };
+                    positions[widget.id] = { 
+                        left: widget.style.left, 
+                        top: widget.style.top,
+                        width: widget.style.width,
+                        height: widget.style.height,
+                        isMinimized: widget.classList.contains('minimized')
+                    };
                 });
                 localStorage.setItem(WIDGET_POSITIONS_KEY, JSON.stringify(positions));
             }
@@ -253,6 +218,17 @@
                         if (widget) {
                             widget.style.left = savedPositions[id].left;
                             widget.style.top = savedPositions[id].top;
+                            if (savedPositions[id].width && !savedPositions[id].isMinimized) {
+                                widget.style.width = savedPositions[id].width;
+                            }
+                            if (savedPositions[id].height && !savedPositions[id].isMinimized) {
+                                widget.style.height = savedPositions[id].height;
+                            }
+                            if (savedPositions[id].isMinimized) {
+                                widget.classList.add('minimized');
+                            } else {
+                                widget.classList.remove('minimized');
+                            }
                         }
                     });
                 } else {
@@ -329,12 +305,19 @@
                 
                 const toggleMinimize = (e) => {
                     if (didDrag) return;
-                    if (e.target.closest('.widget-header')) widget.classList.toggle('minimized');
+                    if (e.target.closest('.widget-header')) {
+                        widget.classList.toggle('minimized');
+                        saveWidgetPositions(); // Save state after toggling
+                    }
                 };
 
                 header.addEventListener('mousedown', onMouseDown);
                 header.addEventListener('touchstart', onMouseDown);
                 header.addEventListener('click', toggleMinimize);
+
+                // Save dimensions on resize
+                const resizeObserver = new ResizeObserver(saveWidgetPositions);
+                resizeObserver.observe(widget);
             }
 
             // --- Long Press Context Menu ---
@@ -387,6 +370,7 @@
                 });
                 collapseAllBtn.addEventListener('click', () => {
                     document.querySelectorAll('.widget').forEach(w => w.classList.add('minimized'));
+                    saveWidgetPositions(); // Save the new collapsed state
                     hideContextMenu();
                 });
             }
@@ -399,7 +383,7 @@
                 
                 content.innerHTML = `
                     <div class="weather-animation-bg"></div>
-                    <div class="relative z-10 p-4 rounded-lg">
+                    <div class="relative z-10">
                         <div class="text-center">
                             <p id="weather-temp" class="text-4xl font-bold">--°C</p>
                             <p id="weather-desc" class="text-gray-200">Loading...</p>
