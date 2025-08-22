@@ -33,8 +33,7 @@
 				inset 0 0 14px 7px rgba(255, 255, 255, 0.1);
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, width 0.3s ease-in-out, height 0.3s ease-in-out;
             z-index: 10;
-            overflow: hidden; /* Changed from auto to hidden */
-            resize: both; /* Make widgets resizable */
+            overflow: hidden;
             min-width: 280px; /* Prevent widgets from becoming too small */
             min-height: 200px;
         }
@@ -79,7 +78,7 @@
             user-select: none;
         }
         
-        .widget.dragging {
+        .widget.dragging, .widget.resizing {
             transform: scale(1.02);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             transition: none;
@@ -93,7 +92,7 @@
             overflow: hidden; 
             resize: none; /* Disable resizing when minimized */
         }
-        .widget.minimized .widget-content, .widget.minimized .widget-header .title-text { display: none; }
+        .widget.minimized .widget-content, .widget.minimized .widget-header .title-text, .widget.minimized .resize-handle { display: none; }
         .widget.minimized .widget-header .icon-container { margin: 0; }
 
         .clock-face { width: 150px; height: 150px; border: 2px solid rgba(255, 255, 255, 0.5); border-radius: 50%; position: relative; }
@@ -131,6 +130,16 @@
         .delete-note-btn { position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; background: rgba(0,0,0,0.2); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; opacity: 0; }
         .sticky-note:hover .delete-note-btn { opacity: 1; }
         #add-note-btn { position: absolute; top: -12px; right: -12px; z-index: 25; width: 32px; height: 32px; background: #facc15; color: #1f2937; border-radius: 50%; border: none; font-size: 24px; line-height: 1; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+        .resize-handle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            cursor: se-resize;
+            z-index: 20;
+        }
 
         @keyframes spin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
         @keyframes drift { from { transform: translateX(-30%); } to { transform: translateX(30%); } }
@@ -190,8 +199,12 @@
                 const content = document.createElement('div');
                 content.className = 'widget-content p-4 relative h-full'; // Added relative and h-full
 
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+
                 widget.appendChild(header);
                 widget.appendChild(content);
+                widget.appendChild(resizeHandle);
 
                 return { widget, content };
             }
@@ -248,12 +261,13 @@
 
             function applyCoreWidgetFunctionality(widget) {
                 const header = widget.querySelector('.widget-header');
+                const resizeHandle = widget.querySelector('.resize-handle');
                 let activeWidget = null;
                 let offsetX = 0, offsetY = 0;
                 let didDrag = false;
 
                 const onMouseDown = (e) => {
-                    if (e.target.closest('button, input, .sticky-note, [contenteditable]')) return;
+                    if (e.target.closest('button, input, .sticky-note, [contenteditable], .resize-handle')) return;
                     if (e.button !== 0 && e.type !== 'touchstart') return;
                     
                     highestZ++;
@@ -315,9 +329,47 @@
                 header.addEventListener('touchstart', onMouseDown);
                 header.addEventListener('click', toggleMinimize);
 
-                // Save dimensions on resize
-                const resizeObserver = new ResizeObserver(saveWidgetPositions);
-                resizeObserver.observe(widget);
+                // --- Resizing Logic ---
+                let initialWidth, initialHeight, initialMouseX, initialMouseY;
+
+                function onResizeMouseDown(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    widget.classList.add('resizing');
+                    initialWidth = widget.offsetWidth;
+                    initialHeight = widget.offsetHeight;
+                    initialMouseX = e.clientX || e.touches[0].clientX;
+                    initialMouseY = e.clientY || e.touches[0].clientY;
+
+                    document.addEventListener('mousemove', onResizeMouseMove);
+                    document.addEventListener('mouseup', onResizeMouseUp);
+                    document.addEventListener('touchmove', onResizeMouseMove, { passive: false });
+                    document.addEventListener('touchend', onResizeMouseUp);
+                }
+
+                function onResizeMouseMove(e) {
+                    e.preventDefault();
+                    const currentMouseX = e.clientX || e.touches[0].clientX;
+                    const currentMouseY = e.clientY || e.touches[0].clientY;
+                    const dx = currentMouseX - initialMouseX;
+                    const dy = currentMouseY - initialMouseY;
+
+                    widget.style.width = `${initialWidth + dx}px`;
+                    widget.style.height = `${initialHeight + dy}px`;
+                }
+
+                function onResizeMouseUp() {
+                    widget.classList.remove('resizing');
+                    saveWidgetPositions();
+                    document.removeEventListener('mousemove', onResizeMouseMove);
+                    document.removeEventListener('mouseup', onResizeMouseUp);
+                    document.removeEventListener('touchmove', onResizeMouseMove);
+                    document.removeEventListener('touchend', onResizeMouseUp);
+                }
+
+                resizeHandle.addEventListener('mousedown', onResizeMouseDown);
+                resizeHandle.addEventListener('touchstart', onResizeMouseDown);
             }
 
             // --- Long Press Context Menu ---
@@ -842,7 +894,7 @@
             // --- Main Execution ---
             async function main() {
                 // Create all widgets first
-                initWeatherWidget();
+                await initWeatherWidget();
                 initClockWidget();
                 initCalendarWidget();
                 initTodoListWidget();
