@@ -1,3 +1,5 @@
+![alt text](https://github.com/jaysonragasa/jaradashboard/blob/main/Animation%2008222025112652.gif?raw=true)
+
 # Dynamic Dashboard with Draggable Widgets
 
 A sleek, modern, and customizable dashboard built with vanilla JavaScript. This project features draggable and resizable widgets with persistent state, a "glassmorphism" UI, and a modular design that makes it easy to add new functionality.
