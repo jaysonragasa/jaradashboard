@@ -184,3 +184,19 @@ async function initQuoteWidget() {
 	}
 }
 ```
+### Here's another very basic of widget 
+```javascript
+async function initAboutWidget() {
+	// define an SVG icon
+	const icon = `<svg class="text-indigo-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path><path d="M14 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2h-4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path></svg>`;
+
+	// widget - add the unique widget id and title
+	const { widget, content } = createWidget('about-widget', icon, 'Basic Widget', ['w-80']);
+
+	// define the content
+	content.innerHTML = `<blockquote id="about-text" class="text-lg italic text-center">Basic Widget</blockquote>`;
+
+	//	do not forget to add this new widget in our dashboard-container
+	document.getElementById('dashboard-container').appendChild(widget);
+}
+```
