@@ -160,9 +160,9 @@ SOFTWARE.
         .weather-animation-bg { position: absolute; inset: 0; z-index: 0; }
         .sun { position: absolute; top: 30%; left: 50%; width: 60px; height: 60px; background: #facc15; border-radius: 50%; transform: translate(-50%, -50%); }
         .weather-sunny .sun { animation: spin 20s linear infinite; }
-        .cloud { position: absolute; background: #e5e7eb; border-radius: 20px; opacity: 0.8; }
-        .cloud1 { width: 100px; height: 60px; top: 20%; left: 30%; animation: drift 25s linear infinite alternate; }
-        .cloud2 { width: 80px; height: 40px; top: 50%; left: 10%; animation: drift 35s linear infinite alternate-reverse; }
+        .cloud { position: absolute; background: #e5e7eb; border-radius: 30px; opacity: 0.3; }
+        .cloud1 { width: 100px; height: 50px; top: 20%; left: 50%; animation: drift 10s linear infinite alternate; }
+        .cloud2 { width: 80px; height: 40px; top: 50%; left: 10%; animation: drift 15s linear infinite alternate-reverse; }
         .rain-drop { position: absolute; width: 1px; height: 10px; background: #9ca3af; animation: fall 1s linear infinite; }
         
         /* Sticky Notes Styles */
@@ -1044,7 +1044,7 @@ SOFTWARE.
 				document.getElementById('dashboard-container').appendChild(widget);
 			}
 
-			/*
+			
 			// comment out initBasicWidget(); in main() function to use this
 			async function initBasicWidget() {
 				// define an SVG icon
@@ -1065,7 +1065,7 @@ SOFTWARE.
 				//	do not forget to add this new child to our dashboard-container
 				document.getElementById('dashboard-container').appendChild(widget);
 			}
-			*/
+			
 			
 			async function initPetGame() {
 				// 1. DEFINE WIDGET METADATA
