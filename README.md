@@ -18,7 +18,6 @@ A sleek, modern, and customizable dashboard built with vanilla JavaScript. This 
 - **Interactive Calendar**: View months, see the current date, and add/delete events for any day.
 - **Todo List**: A fully functional to-do list with draggable reordering and completion toggles.
 - **Sticky Notes**: Add, edit, and move multiple sticky notes within their own container.
-- **TinyChat**: A chat interface powered by the Google Gemini API for quick questions and answers.
 
 ---
 
