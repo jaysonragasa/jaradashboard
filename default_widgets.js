@@ -599,4 +599,6 @@ async function initDefaultWidgets() {
 	initTodoListWidget();
 	initNotesWidget();
 	await initWeatherWidget();
+	
+	await initStarfieldSimulation();
 }

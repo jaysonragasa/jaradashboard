@@ -588,13 +588,14 @@ SOFTWARE.
                 return widget;
             }
 			
-			//function initDefaultWidgets() {
-				// container
-			//}
+			async function defaultWidgets() {
+				await initDefaultWidgets();
+			}
 			
-			//async function initPetGame() {
+			async function initThirdPartyWidgets() {
 				// container
-			//}
+				await initPetGame();
+			}
 
             // --- MAIN EXECUTION ---
             async function main() {
@@ -602,10 +603,10 @@ SOFTWARE.
                 applySavedSettings();
 
                 // Create all default widgets
-                initDefaultWidgets();
+                await defaultWidgets();
 				
 				// 3rd party widgets
-				await initPetGame();
+				await initThirdPartyWidgets();
 
                 // Apply core functionality to all of them
                 document.querySelectorAll('.widget').forEach(applyCoreWidgetFunctionality);
@@ -622,4 +623,3 @@ SOFTWARE.
     </script>
 </body>
 </html>
-
