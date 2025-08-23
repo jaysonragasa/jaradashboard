@@ -54,8 +54,12 @@ function initClockWidget() {
 	setDate();
 }
 
+// weather widget needs a location request 
+// if allowed, it will detect the current location 
+// if not, fallback will, it will return the current weather in Manila, Ph
 async function initWeatherWidget() {
-	const icon = `<svg class="text-blue-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`;
+	const icon = `<svg class="text-blue-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`;
+	// The createWidget function is assumed to be defined elsewhere.
 	const { widget, content } = createWidget('weather-widget', icon, 'Weather', ['w-72']);
 	
 	content.innerHTML = `
@@ -64,7 +68,7 @@ async function initWeatherWidget() {
 			<div class="text-center">
 				<p id="weather-temp" class="text-4xl font-bold">--°C</p>
 				<p id="weather-desc" class="text-gray-200">Loading...</p>
-				<p id="weather-location" class="text-sm mt-1">Manila, PH</p>
+				<p id="weather-location" class="text-sm mt-1">Fetching location...</p>
 			</div>
 			<div id="hourly-forecast" class="flex overflow-x-auto space-x-4 mt-4 pb-2"></div>
 		</div>`;
@@ -73,10 +77,9 @@ async function initWeatherWidget() {
 
 	const tempEl = content.querySelector('#weather-temp');
 	const descEl = content.querySelector('#weather-desc');
+	const locationEl = content.querySelector('#weather-location');
 	const hourlyForecastEl = content.querySelector('#hourly-forecast');
 	const animationContainer = content.querySelector('.weather-animation-bg');
-	const lat = 14.5995, lon = 120.9842;
-	const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day&hourly=temperature_2m,weather_code&timezone=Asia%2FSingapore`;
 	
 	function getWeatherDescription(code) {
 		const descriptions = { 0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Rime fog", 51: "Light drizzle", 53: "Drizzle", 55: "Dense drizzle", 61: "Slight rain", 63: "Rain", 65: "Heavy rain", 80: "Showers", 81: "Rain showers", 82: "Violent showers", 95: "Thunderstorm" };
@@ -111,44 +114,76 @@ async function initWeatherWidget() {
 		}
 	}
 
-	try {
-		const response = await fetch(url);
-		if (!response.ok) throw new Error('Weather data not available');
-		const data = await response.json();
-		
-		const temp = Math.round(data.current.temperature_2m);
-		const weatherCode = data.current.weather_code;
-		tempEl.textContent = `${temp}°C`;
-		descEl.textContent = getWeatherDescription(weatherCode);
-		updateWeatherAnimation(weatherCode, animationContainer);
+	async function fetchAndDisplayWeather(lat, lon) {
+		const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day&hourly=temperature_2m,weather_code&timezone=auto`;
+		try {
+			const response = await fetch(url);
+			if (!response.ok) throw new Error('Weather data not available');
+			const data = await response.json();
+			
+			const temp = Math.round(data.current.temperature_2m);
+			const weatherCode = data.current.weather_code;
+			tempEl.textContent = `${temp}°C`;
+			descEl.textContent = getWeatherDescription(weatherCode);
+            // Use the timezone from the API response for a more accurate location name
+			locationEl.textContent = data.timezone.split('/')[1].replace('_', ' ');
+			updateWeatherAnimation(weatherCode, animationContainer);
 
-		// Hourly Forecast
-		hourlyForecastEl.innerHTML = '';
-		const now = new Date();
-		const currentHour = now.getHours();
-		const startIndex = data.hourly.time.findIndex(time => new Date(time).getHours() >= currentHour);
+			// Hourly Forecast
+			hourlyForecastEl.innerHTML = '';
+			const now = new Date();
+			const currentHour = now.getHours();
+			const startIndex = data.hourly.time.findIndex(time => new Date(time).getHours() >= currentHour);
 
-		for (let i = startIndex; i < startIndex + 8; i++) {
-			const hourData = {
-				time: new Date(data.hourly.time[i]).getHours(),
-				temp: Math.round(data.hourly.temperature_2m[i]),
-				code: data.hourly.weather_code[i]
-			};
-			const hourEl = document.createElement('div');
-			hourEl.className = 'flex flex-col items-center space-y-1 flex-shrink-0';
-			hourEl.innerHTML = `
-				<span class="text-xs">${hourData.time % 12 === 0 ? 12 : hourData.time % 12}${hourData.time < 12 ? 'am' : 'pm'}</span>
-				<div class="w-8 h-8">${getWeatherIcon(hourData.code, data.current.is_day)}</div>
-				<span class="font-bold text-sm">${hourData.temp}°</span>
-			`;
-			hourlyForecastEl.appendChild(hourEl);
+			for (let i = startIndex; i < startIndex + 8; i++) {
+                if (!data.hourly.time[i]) continue; // Guard against missing data
+				const hourData = {
+					time: new Date(data.hourly.time[i]).getHours(),
+					temp: Math.round(data.hourly.temperature_2m[i]),
+					code: data.hourly.weather_code[i]
+				};
+				const hourEl = document.createElement('div');
+				hourEl.className = 'flex flex-col items-center space-y-1 flex-shrink-0';
+				hourEl.innerHTML = `
+					<span class="text-xs">${hourData.time % 12 === 0 ? 12 : hourData.time % 12}${hourData.time < 12 ? 'am' : 'pm'}</span>
+					<div class="w-8 h-8 text-2xl">${getWeatherIcon(hourData.code, data.current.is_day)}</div>
+					<span class="font-bold text-sm">${hourData.temp}°</span>
+				`;
+				hourlyForecastEl.appendChild(hourEl);
+			}
+
+		} catch (error) {
+			console.error("Failed to fetch weather:", error);
+			descEl.textContent = 'Could not load data';
 		}
-
-	} catch (error) {
-		console.error("Failed to fetch weather:", error);
-		descEl.textContent = 'Could not load data';
 	}
+
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                // Success callback
+                (position) => {
+                    fetchAndDisplayWeather(position.coords.latitude, position.coords.longitude);
+                },
+                // Error callback
+                (error) => {
+                    console.error("Geolocation error:", error);
+                    locationEl.textContent = "Location denied.";
+                    // Fallback to default location (Manila)
+                    fetchAndDisplayWeather(14.5995, 120.9842);
+                }
+            );
+        } else {
+            locationEl.textContent = "Geolocation not supported.";
+            // Fallback to default location (Manila)
+            fetchAndDisplayWeather(14.5995, 120.9842);
+        }
+    }
+
+    // Start the process by getting the location
+    getLocation();
 }
+
 
 function initCalendarWidget() {
 	const icon = `<svg class="text-purple-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>`;
@@ -581,13 +616,7 @@ async function initBasicWidget() {
 	const { widget, content } = createWidget('about-widget', icon, 'Basic Widget', ['w-80']);
 
 	// define the content
-	content.innerHTML = `
-		<blockquote id="about-text" class="text-lg italic text-center">Basic Widget</blockquote>
-		<blockquote id="about-text" class="text-lg italic text-center">Basic Widget</blockquote>
-		<blockquote id="about-text" class="text-lg italic text-center">Basic Widget</blockquote>
-		<blockquote id="about-text" class="text-lg italic text-center">Basic Widget</blockquote>
-		<blockquote id="about-text" class="text-lg italic text-center">Basic Widget</blockquote>
-		<blockquote id="about-text" class="text-lg italic text-center">Basic Widget</blockquote>`;
+	content.innerHTML = ``;
 
 	//	do not forget to add this new child to our dashboard-container
 	document.getElementById('dashboard-container').appendChild(widget);
@@ -598,7 +627,7 @@ async function initDefaultWidgets() {
 	initCalendarWidget();
 	initTodoListWidget();
 	initNotesWidget();
-	await initWeatherWidget();
+	initWeatherWidget();
 	
-	await initStarfieldSimulation();
+	initStarfieldSimulation();
 }
