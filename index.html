@@ -562,6 +562,16 @@ SOFTWARE.
                 header.appendChild(closeButton);
 
                 document.getElementById('dashboard-container').appendChild(widget);
+				
+				// Center the widget on the screen
+                const widgetWidth = widget.offsetWidth;
+                const widgetHeight = widget.offsetHeight;
+                const screenWidth = window.innerWidth;
+                const screenHeight = window.innerHeight;
+
+                widget.style.left = `${(screenWidth - widgetWidth) / 2}px`;
+                widget.style.top = `${(screenHeight - widgetHeight) / 2}px`;
+				
                 applyCoreWidgetFunctionality(widget);
 
                 const saveBtn = content.querySelector('#save-bg-btn');
@@ -577,6 +587,14 @@ SOFTWARE.
 
                 return widget;
             }
+			
+			function initDefaultWidgets() {
+				// container
+			}
+			
+			async function initPetGame() {
+				// container
+			}
 
             // --- MAIN EXECUTION ---
             async function main() {
