@@ -15,7 +15,7 @@ A sleek, modern, and customizable dashboard built with vanilla JavaScript. This 
 - **Live Data & Animations**: The weather widget fetches live data and displays beautiful, full-background animations that correspond to the current conditions.
 
 ### Included Widgets:
-- **Weather**: Live temperature, conditions, and hourly forecast with animated backgrounds.
+- **Weather**: Live temperature, conditions, and hourly forecast with animated backgrounds. This widget will ask for location permission.
 - **Analog Clock**: A real-time analog clock with the current date.
 - **Interactive Calendar**: View months, see the current date, and add/delete events for any day.
 - **Todo List**: A fully functional to-do list with draggable reordering and completion toggles.
