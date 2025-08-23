@@ -734,12 +734,88 @@ async function initBasicWidget() {
 	document.getElementById('dashboard-container').appendChild(widget);
 }
 
+async function initSpotifyWidget() {
+	// Spotify SVG icon
+	const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24"><circle cx="24" cy="24" r="22" fill="#1DB954"/><g fill="none" stroke="#fff" stroke-linecap="round"><path d="M11 18.5c8.1-2.2 17.7-1.3 25.4 2.5" stroke-width="3.2" opacity=".95"/><path d="M12.5 24.3c6.7-1.7 14.6-1.1 21 2.1" stroke-width="3" opacity=".9"/><path d="M14 30.1c5.2-1.2 11.2-.7 16 1.8" stroke-width="2.8" opacity=".9"/></g></svg>`;
+
+	// widget
+	const { widget, content } = createWidget('spotify-widget', icon, 'Spotify Player', ['w-96']);
+
+	// default "Top Picks" embed (fallback if nothing saved)
+	const defaultEmbed = "https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M?utm_source=generator";
+
+	// load saved embed src or fallback
+	let embedSrc = localStorage.getItem("spotifyEmbedSrc") || defaultEmbed;
+
+	function renderPlayer() {
+		content.innerHTML = `
+			<div class="">
+			${embedSrc}
+				<div class="flex justify-end">
+					<button id="settings-btn" 
+						class="text-gray-600 hover:text-black px-2 py-1 rounded">
+						⚙️
+					</button>
+				</div>
+				
+			</div>
+		`;
+
+		const settingsBtn = content.querySelector("#settings-btn");
+		if (settingsBtn) {
+			settingsBtn.onclick = () => renderConfig();
+		}
+	}
+
+	// render config view
+	function renderConfig() {
+		content.innerHTML = `
+			<div class="">
+				<label class="block text-sm font-medium mb-1">Spotify Embed URL</label>
+				<textarea id="embed-input" 
+					class="w-full border rounded p-2 text-sm bg-white text-gray-800"
+					rows="3">${embedSrc}</textarea>
+
+				<div class="flex justify-end space-x-2">
+					<button id="save-btn" 
+						class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+						💾 Save
+					</button>
+				</div>
+			</div>
+		`;
+
+		const saveBtn = content.querySelector("#save-btn");
+		if (saveBtn) {
+			saveBtn.onclick = () => {
+				const newSrc = content.querySelector("#embed-input").value.trim();
+				if (newSrc) {
+					embedSrc = newSrc;
+					localStorage.setItem("spotifyEmbedSrc", embedSrc);
+				} else {
+					// if empty, reset to default top picks
+					embedSrc = defaultEmbed;
+					localStorage.removeItem("spotifyEmbedSrc");
+				}
+				renderPlayer();
+			};
+		}
+	}
+
+	// initial render
+	renderPlayer();
+
+	// attach to dashboard
+	document.getElementById('dashboard-container').appendChild(widget);
+}
+
 async function initDefaultWidgets() {
 	initClockWidget();
 	initCalendarWidget();
 	initTodoListWidget();
 	initNotesWidget();
 	initWeatherWidget();
+	initSpotifyWidget();
 	
 	initStarfieldSimulation();
 }
