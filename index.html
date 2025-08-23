@@ -43,6 +43,12 @@ SOFTWARE.
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
+            transition: background 0.5s ease-in-out;
+        }
+
+        body.bg-hidden {
+            background-image: none !important;
+            background-color: #111827;
         }
 
         .widget {
@@ -199,228 +205,255 @@ SOFTWARE.
     </div>
     
     <div id="context-menu-container" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div class="bg-gray-800 p-2 rounded-lg shadow-xl w-60">
+        <div class="bg-gray-800 p-2 rounded-lg shadow-xl w-60 flex flex-col space-y-1">
              <button id="reset-widgets-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Reset Widgets</button>
-             <button id="collapse-all-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Collapse All Widgets</button>
+             <button id="toggle-collapse-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Collapse All Widgets</button>
+             <button id="toggle-bg-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Toggle Background</button>
+             <div class="border-t border-gray-700 my-1"></div>
+             <button id="show-settings-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Settings</button>
         </div>
     </div>
-
+	
+	<script src="default_widgets.js"></script>
+	<script src="widget_petgame.js"></script>
 
     <script>
+		// --- GLOBAL CONFIG & STATE ---
+		const WIDGET_POSITIONS_KEY = 'dashboardWidgetPositions';
+		const TODO_ITEMS_KEY = 'todoListItems';
+		const BACKGROUND_URL_KEY = 'backgroundImageURL';
+		const BACKGROUND_HIDDEN_KEY = 'backgroundHidden';
+		let highestZ = 10;
+
+		// --- INITIAL PAGE LOAD ---
+		function applySavedSettings() {
+			// Apply background image
+			const savedBgUrl = localStorage.getItem(BACKGROUND_URL_KEY);
+			if (savedBgUrl) {
+				document.body.style.backgroundImage = `url('${savedBgUrl}')`;
+			}
+
+			// Apply background visibility
+			const isBgHidden = localStorage.getItem(BACKGROUND_HIDDEN_KEY) === 'true';
+			if (isBgHidden) {
+				document.body.classList.add('bg-hidden');
+			}
+		}
+
+		function saveWidgetPositions() {
+			const positions = {};
+			document.querySelectorAll('.widget').forEach(widget => {
+				positions[widget.id] = { 
+					left: widget.style.left, 
+					top: widget.style.top,
+					width: widget.style.width,
+					height: widget.style.height,
+					isMinimized: widget.classList.contains('minimized')
+				};
+			});
+			localStorage.setItem(WIDGET_POSITIONS_KEY, JSON.stringify(positions));
+		}
+
+		function loadWidgetPositions() {
+			const savedPositions = JSON.parse(localStorage.getItem(WIDGET_POSITIONS_KEY));
+			if (savedPositions) {
+				Object.keys(savedPositions).forEach(id => {
+					const widget = document.getElementById(id);
+					if (widget) {
+						widget.style.left = savedPositions[id].left;
+						widget.style.top = savedPositions[id].top;
+						if (savedPositions[id].width && !savedPositions[id].isMinimized) {
+							widget.style.width = savedPositions[id].width;
+						}
+						if (savedPositions[id].height && !savedPositions[id].isMinimized) {
+							widget.style.height = savedPositions[id].height;
+						}
+						if (savedPositions[id].isMinimized) {
+							widget.classList.add('minimized');
+						} else {
+							widget.classList.remove('minimized');
+						}
+					}
+				});
+			} else {
+				applyDefaultLayout();
+			}
+		}
+		
+		function applyDefaultLayout() {
+			let topOffset = 20;
+			document.querySelectorAll('.widget').forEach(widget => {
+				widget.classList.add('minimized');
+				widget.style.left = '20px';
+				widget.style.top = `${topOffset}px`;
+				topOffset += 80;
+			});
+			saveWidgetPositions();
+		}
+
+		function applyCoreWidgetFunctionality(widget) {
+			const header = widget.querySelector('.widget-header');
+			const resizeHandle = widget.querySelector('.resize-gripper');
+			let activeWidget = null;
+			let offsetX = 0, offsetY = 0;
+			let didDrag = false;
+
+			const onMouseDown = (e) => {
+				if (e.target.closest('button, input, .sticky-note, [contenteditable], .resize-gripper')) return;
+				if (e.button !== 0 && e.type !== 'touchstart') return;
+				
+				highestZ++;
+				widget.style.zIndex = highestZ;
+				didDrag = false;
+				activeWidget = widget;
+				activeWidget.classList.add('dragging');
+				
+				const touch = e.type === 'touchstart' ? e.touches[0] : e;
+				const rect = activeWidget.getBoundingClientRect();
+				offsetX = touch.clientX - rect.left;
+				offsetY = touch.clientY - rect.top;
+
+				document.addEventListener('mousemove', onMouseMove);
+				document.addEventListener('mouseup', onMouseUp);
+				document.addEventListener('touchmove', onMouseMove, { passive: false });
+				document.addEventListener('touchend', onMouseUp);
+			};
+
+			const onMouseMove = (e) => {
+				if (!activeWidget) return;
+				didDrag = true;
+				e.preventDefault();
+				
+				const touch = e.type === 'touchmove' ? e.touches[0] : e;
+				let newX = touch.clientX - offsetX;
+				let newY = touch.clientY - offsetY;
+
+				const container = document.getElementById('dashboard-container');
+				const containerRect = container.getBoundingClientRect();
+				const widgetRect = activeWidget.getBoundingClientRect();
+				newX = Math.max(0, Math.min(newX, containerRect.width - widgetRect.width));
+				newY = Math.max(0, Math.min(newY, containerRect.height - widgetRect.height));
+
+				activeWidget.style.left = `${newX}px`;
+				activeWidget.style.top = `${newY}px`;
+			};
+
+			const onMouseUp = () => {
+				if (!activeWidget) return;
+				activeWidget.classList.remove('dragging');
+				if (didDrag) saveWidgetPositions();
+				activeWidget = null;
+				document.removeEventListener('mousemove', onMouseMove);
+				document.removeEventListener('mouseup', onMouseUp);
+				document.removeEventListener('touchmove', onMouseMove);
+				document.removeEventListener('touchend', onMouseUp);
+			};
+			
+			const toggleMinimize = (e) => {
+				if (didDrag) return;
+				if (e.target.closest('.widget-header') && !e.target.closest('.close-widget-btn')) {
+					widget.classList.toggle('minimized');
+					saveWidgetPositions(); // Save state after toggling
+				}
+			};
+
+			header.addEventListener('mousedown', onMouseDown);
+			header.addEventListener('touchstart', onMouseDown);
+			header.addEventListener('click', toggleMinimize);
+
+			// --- Resizing Logic ---
+			let initialWidth, initialHeight, initialMouseX, initialMouseY;
+
+			function onResizeMouseDown(e) {
+				e.preventDefault();
+				e.stopPropagation();
+
+				widget.classList.add('resizing');
+				initialWidth = widget.offsetWidth;
+				initialHeight = widget.offsetHeight;
+				initialMouseX = e.clientX || e.touches[0].clientX;
+				initialMouseY = e.clientY || e.touches[0].clientY;
+
+				document.addEventListener('mousemove', onResizeMouseMove);
+				document.addEventListener('mouseup', onResizeMouseUp);
+				document.addEventListener('touchmove', onResizeMouseMove, { passive: false });
+				document.addEventListener('touchend', onResizeMouseUp);
+			}
+
+			function onResizeMouseMove(e) {
+				e.preventDefault();
+				const currentMouseX = e.clientX || e.touches[0].clientX;
+				const currentMouseY = e.clientY || e.touches[0].clientY;
+				const dx = currentMouseX - initialMouseX;
+				const dy = currentMouseY - initialMouseY;
+
+				widget.style.width = `${initialWidth + dx}px`;
+				widget.style.height = `${initialHeight + dy}px`;
+			}
+
+			function onResizeMouseUp() {
+				widget.classList.remove('resizing');
+				saveWidgetPositions();
+				document.removeEventListener('mousemove', onResizeMouseMove);
+				document.removeEventListener('mouseup', onResizeMouseUp);
+				document.removeEventListener('touchmove', onResizeMouseMove);
+				document.removeEventListener('touchend', onResizeMouseUp);
+			}
+
+			resizeHandle.addEventListener('mousedown', onResizeMouseDown);
+			resizeHandle.addEventListener('touchstart', onResizeMouseDown);
+		}
+		
+		/**
+		 * Creates a generic widget container.
+		 * @param {string} id - The ID for the widget element.
+		 * @param {string} iconSVG - The SVG string for the widget's icon.
+		 * @param {string} title - The title of the widget.
+		 * @param {string[]} classes - An array of TailwindCSS classes for sizing (e.g., ['w-72']).
+		 * @returns {{widget: HTMLElement, content: HTMLElement, header: HTMLElement}} - The widget element, its content container, and header.
+		 */
+		function createWidget(id, iconSVG, title, classes = []) {
+			const widget = document.createElement('div');
+			widget.id = id;
+			widget.className = `widget rounded-xl ${classes.join(' ')}`;
+
+			const header = document.createElement('div');
+			header.className = 'widget-header flex items-center p-3 border-b border-white/20';
+			
+			const iconContainer = document.createElement('div');
+			iconContainer.className = 'icon-container w-6 h-6 mr-3 flex items-center justify-center';
+			iconContainer.innerHTML = iconSVG;
+
+			const titleSpan = document.createElement('span');
+			titleSpan.className = 'title-text font-semibold flex-grow';
+			titleSpan.textContent = title;
+
+			header.appendChild(iconContainer);
+			header.appendChild(titleSpan);
+
+			const content = document.createElement('div');
+			content.className = 'widget-content p-4 relative h-full'; // Added relative and h-full
+
+			const resizeGripper = document.createElement('div');
+			resizeGripper.className = 'resize-gripper';
+			resizeGripper.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grip-diagonal" viewBox="0 0 16 16"><path d="M7 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z"/></svg>`;
+
+			widget.appendChild(header);
+			widget.appendChild(content);
+			widget.appendChild(resizeGripper);
+
+			return { widget, content, header };
+		}
+			
         document.addEventListener('DOMContentLoaded', () => {
-            const WIDGET_POSITIONS_KEY = 'dashboardWidgetPositions';
-            let highestZ = 10;
-
-            /**
-             * Creates a generic widget container.
-             * @param {string} id - The ID for the widget element.
-             * @param {string} iconSVG - The SVG string for the widget's icon.
-             * @param {string} title - The title of the widget.
-             * @param {string[]} classes - An array of TailwindCSS classes for sizing (e.g., ['w-72']).
-             * @returns {{widget: HTMLElement, content: HTMLElement}} - The widget element and its content container.
-             */
-            function createWidget(id, iconSVG, title, classes = []) {
-                const widget = document.createElement('div');
-                widget.id = id;
-                widget.className = `widget rounded-xl ${classes.join(' ')}`;
-
-                const header = document.createElement('div');
-                header.className = 'widget-header flex items-center p-3 border-b border-white/20';
-                
-                const iconContainer = document.createElement('div');
-                iconContainer.className = 'icon-container w-6 h-6 mr-3 flex items-center justify-center';
-                iconContainer.innerHTML = iconSVG;
-
-                const titleSpan = document.createElement('span');
-                titleSpan.className = 'title-text font-semibold';
-                titleSpan.textContent = title;
-
-                header.appendChild(iconContainer);
-                header.appendChild(titleSpan);
-
-                const content = document.createElement('div');
-                content.className = 'widget-content p-4 relative h-full'; // Added relative and h-full
-
-                const resizeGripper = document.createElement('div');
-                resizeGripper.className = 'resize-gripper';
-                resizeGripper.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grip-diagonal" viewBox="0 0 16 16"><path d="M7 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z"/></svg>`;
-
-                widget.appendChild(header);
-                widget.appendChild(content);
-                widget.appendChild(resizeGripper);
-
-                return { widget, content };
-            }
-
-            function saveWidgetPositions() {
-                const positions = {};
-                document.querySelectorAll('.widget').forEach(widget => {
-                    positions[widget.id] = { 
-                        left: widget.style.left, 
-                        top: widget.style.top,
-                        width: widget.style.width,
-                        height: widget.style.height,
-                        isMinimized: widget.classList.contains('minimized')
-                    };
-                });
-                localStorage.setItem(WIDGET_POSITIONS_KEY, JSON.stringify(positions));
-            }
-
-            function loadWidgetPositions() {
-                const savedPositions = JSON.parse(localStorage.getItem(WIDGET_POSITIONS_KEY));
-                if (savedPositions) {
-                    Object.keys(savedPositions).forEach(id => {
-                        const widget = document.getElementById(id);
-                        if (widget) {
-                            widget.style.left = savedPositions[id].left;
-                            widget.style.top = savedPositions[id].top;
-                            if (savedPositions[id].width && !savedPositions[id].isMinimized) {
-                                widget.style.width = savedPositions[id].width;
-                            }
-                            if (savedPositions[id].height && !savedPositions[id].isMinimized) {
-                                widget.style.height = savedPositions[id].height;
-                            }
-                            if (savedPositions[id].isMinimized) {
-                                widget.classList.add('minimized');
-                            } else {
-                                widget.classList.remove('minimized');
-                            }
-                        }
-                    });
-                } else {
-                    applyDefaultLayout();
-                }
-            }
-            
-            function applyDefaultLayout() {
-                let topOffset = 20;
-                document.querySelectorAll('.widget').forEach(widget => {
-                    widget.classList.add('minimized');
-                    widget.style.left = '20px';
-                    widget.style.top = `${topOffset}px`;
-                    topOffset += 80;
-                });
-            }
-
-            function applyCoreWidgetFunctionality(widget) {
-                const header = widget.querySelector('.widget-header');
-                const resizeHandle = widget.querySelector('.resize-gripper');
-                let activeWidget = null;
-                let offsetX = 0, offsetY = 0;
-                let didDrag = false;
-
-                const onMouseDown = (e) => {
-                    if (e.target.closest('button, input, .sticky-note, [contenteditable], .resize-gripper')) return;
-                    if (e.button !== 0 && e.type !== 'touchstart') return;
-                    
-                    highestZ++;
-                    widget.style.zIndex = highestZ;
-                    didDrag = false;
-                    activeWidget = widget;
-                    activeWidget.classList.add('dragging');
-                    
-                    const touch = e.type === 'touchstart' ? e.touches[0] : e;
-                    const rect = activeWidget.getBoundingClientRect();
-                    offsetX = touch.clientX - rect.left;
-                    offsetY = touch.clientY - rect.top;
-
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                    document.addEventListener('touchmove', onMouseMove, { passive: false });
-                    document.addEventListener('touchend', onMouseUp);
-                };
-
-                const onMouseMove = (e) => {
-                    if (!activeWidget) return;
-                    didDrag = true;
-                    e.preventDefault();
-                    
-                    const touch = e.type === 'touchmove' ? e.touches[0] : e;
-                    let newX = touch.clientX - offsetX;
-                    let newY = touch.clientY - offsetY;
-
-                    const container = document.getElementById('dashboard-container');
-                    const containerRect = container.getBoundingClientRect();
-                    const widgetRect = activeWidget.getBoundingClientRect();
-                    newX = Math.max(0, Math.min(newX, containerRect.width - widgetRect.width));
-                    newY = Math.max(0, Math.min(newY, containerRect.height - widgetRect.height));
-
-                    activeWidget.style.left = `${newX}px`;
-                    activeWidget.style.top = `${newY}px`;
-                };
-
-                const onMouseUp = () => {
-                    if (!activeWidget) return;
-                    activeWidget.classList.remove('dragging');
-                    if (didDrag) saveWidgetPositions();
-                    activeWidget = null;
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                    document.removeEventListener('touchmove', onMouseMove);
-                    document.removeEventListener('touchend', onMouseUp);
-                };
-                
-                const toggleMinimize = (e) => {
-                    if (didDrag) return;
-                    if (e.target.closest('.widget-header')) {
-                        widget.classList.toggle('minimized');
-                        saveWidgetPositions(); // Save state after toggling
-                    }
-                };
-
-                header.addEventListener('mousedown', onMouseDown);
-                header.addEventListener('touchstart', onMouseDown);
-                header.addEventListener('click', toggleMinimize);
-
-                // --- Resizing Logic ---
-                let initialWidth, initialHeight, initialMouseX, initialMouseY;
-
-                function onResizeMouseDown(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    widget.classList.add('resizing');
-                    initialWidth = widget.offsetWidth;
-                    initialHeight = widget.offsetHeight;
-                    initialMouseX = e.clientX || e.touches[0].clientX;
-                    initialMouseY = e.clientY || e.touches[0].clientY;
-
-                    document.addEventListener('mousemove', onResizeMouseMove);
-                    document.addEventListener('mouseup', onResizeMouseUp);
-                    document.addEventListener('touchmove', onResizeMouseMove, { passive: false });
-                    document.addEventListener('touchend', onResizeMouseUp);
-                }
-
-                function onResizeMouseMove(e) {
-                    e.preventDefault();
-                    const currentMouseX = e.clientX || e.touches[0].clientX;
-                    const currentMouseY = e.clientY || e.touches[0].clientY;
-                    const dx = currentMouseX - initialMouseX;
-                    const dy = currentMouseY - initialMouseY;
-
-                    widget.style.width = `${initialWidth + dx}px`;
-                    widget.style.height = `${initialHeight + dy}px`;
-                }
-
-                function onResizeMouseUp() {
-                    widget.classList.remove('resizing');
-                    saveWidgetPositions();
-                    document.removeEventListener('mousemove', onResizeMouseMove);
-                    document.removeEventListener('mouseup', onResizeMouseUp);
-                    document.removeEventListener('touchmove', onResizeMouseMove);
-                    document.removeEventListener('touchend', onResizeMouseUp);
-                }
-
-                resizeHandle.addEventListener('mousedown', onResizeMouseDown);
-                resizeHandle.addEventListener('touchstart', onResizeMouseDown);
-            }
-
-            // --- Long Press Context Menu ---
+            // --- CONTEXT MENU ---
             function initContextMenu() {
                 const dashboardContainer = document.getElementById('dashboard-container');
                 const contextMenu = document.getElementById('context-menu-container');
                 const resetBtn = document.getElementById('reset-widgets-btn');
-                const collapseAllBtn = document.getElementById('collapse-all-btn');
+                const toggleCollapseBtn = document.getElementById('toggle-collapse-btn');
+                const toggleBgBtn = document.getElementById('toggle-bg-btn');
+                const showSettingsBtn = document.getElementById('show-settings-btn');
                 let longPressTimer;
                 let startX, startY;
 
@@ -458,929 +491,116 @@ SOFTWARE.
                 contextMenu.addEventListener('click', (e) => {
                     if (e.target === contextMenu) hideContextMenu();
                 });
+
                 resetBtn.addEventListener('click', () => {
+                    // Clear all relevant local storage items
                     localStorage.removeItem(WIDGET_POSITIONS_KEY);
-                    applyDefaultLayout();
-                    hideContextMenu();
+                    localStorage.removeItem(TODO_ITEMS_KEY);
+                    //localStorage.removeItem(BACKGROUND_URL_KEY);
+                    localStorage.removeItem(BACKGROUND_HIDDEN_KEY);
+                    window.location.reload();
                 });
-                collapseAllBtn.addEventListener('click', () => {
-                    document.querySelectorAll('.widget').forEach(w => w.classList.add('minimized'));
-                    saveWidgetPositions(); // Save the new collapsed state
-                    hideContextMenu();
-                });
-            }
 
-            // --- WIDGET INITIALIZATION ---
-
-            async function initWeatherWidget() {
-                const icon = `<svg class="text-blue-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`;
-                const { widget, content } = createWidget('weather-widget', icon, 'Weather', ['w-72']);
-                
-                content.innerHTML = `
-                    <div class="weather-animation-bg"></div>
-                    <div class="relative z-10">
-                        <div class="text-center">
-                            <p id="weather-temp" class="text-4xl font-bold">--°C</p>
-                            <p id="weather-desc" class="text-gray-200">Loading...</p>
-                            <p id="weather-location" class="text-sm mt-1">Manila, PH</p>
-                        </div>
-                        <div id="hourly-forecast" class="flex overflow-x-auto space-x-4 mt-4 pb-2"></div>
-                    </div>`;
-                
-                document.getElementById('dashboard-container').appendChild(widget);
-
-                const tempEl = content.querySelector('#weather-temp');
-                const descEl = content.querySelector('#weather-desc');
-                const hourlyForecastEl = content.querySelector('#hourly-forecast');
-                const animationContainer = content.querySelector('.weather-animation-bg');
-                const lat = 14.5995, lon = 120.9842;
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day&hourly=temperature_2m,weather_code&timezone=Asia%2FSingapore`;
-
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error('Weather data not available');
-                    const data = await response.json();
-                    
-                    const temp = Math.round(data.current.temperature_2m);
-                    const weatherCode = data.current.weather_code;
-                    tempEl.textContent = `${temp}°C`;
-                    descEl.textContent = getWeatherDescription(weatherCode);
-                    updateWeatherAnimation(weatherCode, animationContainer);
-
-                    // Hourly Forecast
-                    hourlyForecastEl.innerHTML = '';
-                    const now = new Date();
-                    const currentHour = now.getHours();
-                    const startIndex = data.hourly.time.findIndex(time => new Date(time).getHours() >= currentHour);
-
-                    for (let i = startIndex; i < startIndex + 8; i++) {
-                        const hourData = {
-                            time: new Date(data.hourly.time[i]).getHours(),
-                            temp: Math.round(data.hourly.temperature_2m[i]),
-                            code: data.hourly.weather_code[i]
-                        };
-                        const hourEl = document.createElement('div');
-                        hourEl.className = 'flex flex-col items-center space-y-1 flex-shrink-0';
-                        hourEl.innerHTML = `
-                            <span class="text-xs">${hourData.time % 12 === 0 ? 12 : hourData.time % 12}${hourData.time < 12 ? 'am' : 'pm'}</span>
-                            <div class="w-8 h-8">${getWeatherIcon(hourData.code, data.current.is_day)}</div>
-                            <span class="font-bold text-sm">${hourData.temp}°</span>
-                        `;
-                        hourlyForecastEl.appendChild(hourEl);
-                    }
-
-                } catch (error) {
-                    console.error("Failed to fetch weather:", error);
-                    descEl.textContent = 'Could not load data';
-                }
-            }
-
-            function getWeatherDescription(code) {
-                const descriptions = { 0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Rime fog", 51: "Light drizzle", 53: "Drizzle", 55: "Dense drizzle", 61: "Slight rain", 63: "Rain", 65: "Heavy rain", 80: "Showers", 81: "Rain showers", 82: "Violent showers", 95: "Thunderstorm" };
-                return descriptions[code] || "Clear";
-            }
-            
-            function getWeatherIcon(code, isDay = 1) {
-                // Simplified icon mapping
-                if (code <= 1) return isDay ? '☀️' : '🌙';
-                if (code <= 3) return '☁️';
-                if (code >= 51 && code <= 65) return '🌧️';
-                if (code >= 80 && code <= 82) return '🌦️';
-                if (code >= 95) return '⛈️';
-                return '🌫️'; // Fog
-            }
-
-            function updateWeatherAnimation(code, container) {
-                container.innerHTML = '';
-                if (code <= 1) {
-                    container.className = 'weather-animation-bg weather-sunny';
-                    container.innerHTML = '<div class="sun"></div>';
-                } else if (code <= 3 || code === 45 || code === 48) {
-                    container.className = 'weather-animation-bg weather-cloudy';
-                    container.innerHTML = '<div class="sun" style="background:#fde047;"></div><div class="cloud cloud1"></div><div class="cloud cloud2"></div>';
-                } else {
-                    container.className = 'weather-animation-bg weather-rainy';
-                    let html = '<div class="cloud cloud1" style="background:#9ca3af;"></div><div class="cloud cloud2" style="background:#9ca3af;"></div>';
-                    for (let i = 0; i < 20; i++) {
-                        html += `<div class="rain-drop" style="left: ${Math.random() * 100}%; animation-delay: ${Math.random() * 2}s; animation-duration: ${0.5 + Math.random() * 0.5}s;"></div>`;
-                    }
-                    container.innerHTML = html;
-                }
-            }
-
-            function initClockWidget() {
-                const icon = `<svg class="text-green-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
-                const { widget, content } = createWidget('clock-widget', icon, 'Clock & Date', ['w-72']);
-
-                content.classList.add('flex', 'flex-col', 'items-center');
-                content.innerHTML = `
-                    <div class="clock-face mb-4 bg-black/20">
-                        <div class="hand hour-hand"></div>
-                        <div class="hand minute-hand"></div>
-                        <div class="hand second-hand"></div>
-                        <div class="clock-center"></div>
-                    </div>
-                    <p id="current-time" class="font-medium text-lg"></p>
-					<p id="current-date" class="font-medium text-lg"></p>`;
-                
-                document.getElementById('dashboard-container').appendChild(widget);
-
-                const hourHand = content.querySelector('.hour-hand');
-                const minuteHand = content.querySelector('.minute-hand');
-                const secondHand = content.querySelector('.second-hand');
-                const dateElement = content.querySelector('#current-date');
-				const timeElement = content.querySelector('#current-time');
-				
-				function getCurrentTime() {
-				  const now = new Date();
-
-				  let hours = now.getHours();
-				  const minutes = now.getMinutes();
-				  const seconds = now.getSeconds();
-				  const ampm = hours >= 12 ? 'PM' : 'AM';
-
-				  hours = hours % 12;
-				  hours = hours ? hours : 12; // 0 becomes 12
-
-				  const formattedTime = 
-					`${hours.toString().padStart(2, '0')}:` +
-					`${minutes.toString().padStart(2, '0')}:` +
-					`${seconds.toString().padStart(2, '0')} ${ampm}`;
-
-				  return formattedTime;
-				}
-                
-                function setDate() {
-                    const now = new Date();
-                    secondHand.style.transform = `rotate(${((now.getSeconds() / 60) * 360) + 90}deg)`;
-                    minuteHand.style.transform = `rotate(${((now.getMinutes() / 60) * 360) + ((now.getSeconds() / 60) * 6) + 90}deg)`;
-                    hourHand.style.transform = `rotate(${(((now.getHours() % 12) / 12) * 360) + ((now.getMinutes() / 60) * 30) + 90}deg)`;
-                    dateElement.textContent = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-					timeElement.textContent = getCurrentTime();
-                }
-                setInterval(setDate, 1000);
-                setDate();
-            }
-
-            function initCalendarWidget() {
-                const icon = `<svg class="text-purple-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>`;
-                const { widget, content } = createWidget('calendar-widget', icon, 'Calendar', ['w-80']);
-                
-                content.innerHTML = `
-                    <div class="flex justify-between items-center mb-2">
-                        <button id="prev-month" class="p-1 rounded-full hover:bg-white/20">&lt;</button>
-                        <h3 id="month-year" class="font-semibold text-lg"></h3>
-                        <button id="next-month" class="p-1 rounded-full hover:bg-white/20">&gt;</button>
-                    </div>
-                    <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center"></div>
-                    <div id="event-display-container" class="mt-4"></div>`;
-                
-                document.getElementById('dashboard-container').appendChild(widget);
-
-                const KEY = 'dashboardCalendarEvents';
-                const monthYearEl = content.querySelector('#month-year');
-                const grid = content.querySelector('#calendar-grid');
-                const prevBtn = content.querySelector('#prev-month');
-                const nextBtn = content.querySelector('#next-month');
-                const display = content.querySelector('#event-display-container');
-                const modal = document.getElementById('event-modal'); // Modal is global
-                const input = document.getElementById('event-input');
-                const saveBtn = document.getElementById('save-event-btn');
-                const cancelBtn = document.getElementById('cancel-event-btn');
-                let date = new Date();
-                let selectedStr = null;
-                let events = JSON.parse(localStorage.getItem(KEY)) || {};
-
-                function save() { localStorage.setItem(KEY, JSON.stringify(events)); }
-
-                function render() {
-                    grid.innerHTML = '';
-                    const year = date.getFullYear();
-                    const month = date.getMonth();
-                    monthYearEl.textContent = `${date.toLocaleString('default', { month: 'long' })} ${year}`;
-                    const firstDay = new Date(year, month, 1).getDay();
-                    const daysInMonth = new Date(year, month + 1, 0).getDate();
-                    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(d => {
-                        const el = document.createElement('div');
-                        el.textContent = d;
-                        el.className = 'font-bold text-gray-400 text-sm';
-                        grid.appendChild(el);
-                    });
-                    for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
-                    for (let day = 1; day <= daysInMonth; day++) {
-                        const el = document.createElement('div');
-                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        el.textContent = day;
-                        el.className = 'day-cell p-1 cursor-pointer rounded-full hover:bg-blue-500/50';
-                        const today = new Date();
-                        if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) el.classList.add('today');
-                        if (events[dateStr] && events[dateStr].length > 0) {
-                            const ind = document.createElement('div');
-                            ind.className = 'event-indicator';
-                            el.appendChild(ind);
+                toggleCollapseBtn.addEventListener('click', () => {
+                    const isCollapsed = toggleCollapseBtn.textContent.includes('Collapse');
+                    document.querySelectorAll('.widget').forEach(w => {
+                        if (isCollapsed) {
+                            w.classList.add('minimized');
+                        } else {
+                            w.classList.remove('minimized');
                         }
-                        if (dateStr === selectedStr) el.classList.add('selected');
-                        el.addEventListener('click', () => {
-                            selectedStr = dateStr;
-                            render();
-                            renderEvents();
-                        });
-                        grid.appendChild(el);
-                    }
-                }
+                    });
+                    toggleCollapseBtn.textContent = isCollapsed ? 'Expand All Widgets' : 'Collapse All Widgets';
+                    saveWidgetPositions();
+                    hideContextMenu();
+                });
 
-                function renderEvents() {
-                    display.innerHTML = '';
-                    if (!selectedStr) return;
-                    const evs = events[selectedStr] || [];
-                    const title = document.createElement('h4');
-                    title.className = 'font-bold text-md mb-2';
-                    title.textContent = `Events for ${new Date(selectedStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}`;
-                    display.appendChild(title);
-                    if (evs.length > 0) {
-                        const ul = document.createElement('ul');
-                        ul.className = 'space-y-1';
-                        evs.forEach((ev, i) => {
-                            const li = document.createElement('li');
-                            li.className = 'text-sm flex justify-between items-center';
-                            li.textContent = ev;
-                            const delBtn = document.createElement('button');
-                            delBtn.textContent = '✕';
-                            delBtn.className = 'text-red-400 hover:text-red-300';
-                            delBtn.onclick = () => {
-                                events[selectedStr].splice(i, 1);
-                                save();
-                                render();
-                                renderEvents();
-                            };
-                            li.appendChild(delBtn);
-                            ul.appendChild(li);
-                        });
-                        display.appendChild(ul);
+                toggleBgBtn.addEventListener('click', () => {
+                    document.body.classList.toggle('bg-hidden');
+                    localStorage.setItem(BACKGROUND_HIDDEN_KEY, document.body.classList.contains('bg-hidden'));
+                    hideContextMenu();
+                });
+
+                showSettingsBtn.addEventListener('click', () => {
+                    const settingsWidget = document.getElementById('settings-widget');
+                    if (!settingsWidget) {
+                        initSettingsWidget();
                     } else {
-                        const p = document.createElement('p');
-                        p.className = 'text-sm text-gray-400';
-                        p.textContent = 'No events.';
-                        display.appendChild(p);
+                        // If it exists but was minimized, un-minimize it
+                        settingsWidget.classList.remove('minimized');
+                        settingsWidget.style.zIndex = ++highestZ;
                     }
-                    const addBtn = document.createElement('button');
-                    addBtn.textContent = '+ Add Event';
-                    addBtn.className = 'mt-2 w-full text-center bg-white/10 hover:bg-white/20 p-2 rounded-md text-sm';
-                    addBtn.onclick = () => {
-                        modal.style.display = 'flex';
-                        input.focus();
-                    };
-                    display.appendChild(addBtn);
-                }
+                    hideContextMenu();
+                });
+            }
+
+            function initSettingsWidget() {
+                const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-300"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+                const { widget, content, header } = createWidget('settings-widget', icon, 'Settings', ['w-96']);
+                
+                const currentBg = localStorage.getItem(BACKGROUND_URL_KEY) || 'https://images.pexels.com/photos/1025469/pexels-photo-1025469.jpeg';
+
+                content.innerHTML = `
+                    <div class="space-y-4">
+                        <div>
+                            <label for="bg-url-input" class="block text-sm font-medium text-gray-300 mb-1">Background Image URL</label>
+                            <input type="text" id="bg-url-input" class="w-full bg-white/10 text-white rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-400" value="${currentBg}">
+                        </div>
+                        <div class="flex justify-end">
+                            <button id="save-bg-btn" class="px-4 py-2 bg-purple-500 rounded-md hover:bg-purple-600">Save</button>
+                        </div>
+                    </div>
+                `;
+                
+                const closeButton = document.createElement('button');
+                closeButton.className = 'close-widget-btn text-gray-400 hover:text-white ml-2';
+                closeButton.innerHTML = `&#x2715;`; // 'X' symbol
+                closeButton.onclick = (e) => {
+                    e.stopPropagation();
+                    widget.remove(); // This will close/hide the widget by removing it
+                };
+                header.appendChild(closeButton);
+
+                document.getElementById('dashboard-container').appendChild(widget);
+                applyCoreWidgetFunctionality(widget);
+
+                const saveBtn = content.querySelector('#save-bg-btn');
+                const input = content.querySelector('#bg-url-input');
 
                 saveBtn.addEventListener('click', () => {
-                    const txt = input.value.trim();
-                    if (txt && selectedStr) {
-                        if (!events[selectedStr]) events[selectedStr] = [];
-                        events[selectedStr].push(txt);
-                        save();
-                        input.value = '';
-                        modal.style.display = 'none';
-                        render();
-                        renderEvents();
+                    const newUrl = input.value.trim();
+                    if (newUrl) {
+                        document.body.style.backgroundImage = `url('${newUrl}')`;
+                        localStorage.setItem(BACKGROUND_URL_KEY, newUrl);
                     }
                 });
-                input.addEventListener('keypress', e => { if (e.key === 'Enter') saveBtn.click(); });
-                cancelBtn.addEventListener('click', () => { modal.style.display = 'none'; });
-                prevBtn.addEventListener('click', () => {
-                    date.setMonth(date.getMonth() - 1);
-                    render();
-                });
-                nextBtn.addEventListener('click', () => {
-                    date.setMonth(date.getMonth() + 1);
-                    render();
-                });
-                render();
+
+                return widget;
             }
 
-            function initTodoListWidget() {
-                const icon = `<svg class="text-yellow-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>`;
-                const { widget, content } = createWidget('todo-widget', icon, 'Todo List', ['w-80']);
-
-                content.innerHTML = `
-                    <div class="flex mb-3">
-                        <input type="text" id="todo-input" class="flex-grow bg-black/20 text-white placeholder-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Add a new task...">
-                        <button id="add-todo-btn" class="bg-yellow-500 text-white font-bold px-4 rounded-r-md hover:bg-yellow-600">+</button>
-                    </div>
-                    <ul id="todo-list" class="space-y-2 max-h-60 overflow-y-auto"></ul>`;
-                
-                document.getElementById('dashboard-container').appendChild(widget);
-
-                const KEY = 'dashboardTodoItems';
-                const input = content.querySelector('#todo-input');
-                const addBtn = content.querySelector('#add-todo-btn');
-                const list = content.querySelector('#todo-list');
-
-                function save() {
-                    const items = [];
-                    list.querySelectorAll('.todo-item').forEach(el => items.push({ text: el.querySelector('span').textContent, completed: el.classList.contains('completed') }));
-                    localStorage.setItem(KEY, JSON.stringify(items));
-                }
-
-                function createEl({ text, completed }) {
-                    const li = document.createElement('li');
-                    li.className = 'todo-item flex justify-between items-center p-2 rounded-md hover:bg-white/10';
-                    li.setAttribute('draggable', 'true');
-                    if (completed) li.classList.add('completed');
-                    const span = document.createElement('span');
-                    span.textContent = text;
-                    li.appendChild(span);
-                    const delBtn = document.createElement('button');
-                    delBtn.textContent = '✕';
-                    delBtn.className = 'delete-btn text-red-400 font-bold';
-                    li.appendChild(delBtn);
-                    li.addEventListener('click', e => {
-                        if (e.target !== delBtn) {
-                            li.classList.toggle('completed');
-                            save();
-                        }
-                    });
-                    delBtn.addEventListener('click', () => {
-                        li.remove();
-                        save();
-                    });
-                    li.addEventListener('dragstart', () => li.classList.add('dragging'));
-                    li.addEventListener('dragend', () => {
-                        li.classList.remove('dragging');
-                        save();
-                    });
-                    list.appendChild(li);
-                }
-
-                function load() {
-                    const items = JSON.parse(localStorage.getItem(KEY)) || [];
-                    list.innerHTML = '';
-                    items.forEach(createEl);
-                }
-
-                function add() {
-                    const text = input.value.trim();
-                    if (text) {
-                        createEl({ text, completed: false });
-                        save();
-                        input.value = '';
-                    }
-                }
-
-                list.addEventListener('dragover', e => {
-                    e.preventDefault();
-                    const afterEl = [...list.querySelectorAll('.todo-item:not(.dragging)')].reduce((closest, child) => {
-                        const box = child.getBoundingClientRect();
-                        const offset = e.clientY - box.top - box.height / 2;
-                        return (offset < 0 && offset > closest.offset) ? { offset: offset, element: child } : closest;
-                    }, { offset: Number.NEGATIVE_INFINITY }).element;
-                    const draggingEl = document.querySelector('.todo-item.dragging');
-                    if (draggingEl) {
-                        if (afterEl == null) list.appendChild(draggingEl);
-                        else list.insertBefore(draggingEl, afterEl);
-                    }
-                });
-
-                addBtn.addEventListener('click', add);
-                input.addEventListener('keypress', e => { if (e.key === 'Enter') add(); });
-                load();
-            }
-
-            function initNotesWidget() {
-                const icon = `<svg class="text-yellow-200" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>`;
-                const { widget, content } = createWidget('notes-widget', icon, 'Sticky Notes', ['w-96']);
-                
-                content.innerHTML = `<div id="notes-container"><button id="add-note-btn">+</button></div>`;
-                document.getElementById('dashboard-container').appendChild(widget);
-
-                const NOTES_KEY = 'dashboardStickyNotes';
-                const container = content.querySelector('#notes-container');
-                const addBtn = content.querySelector('#add-note-btn');
-                let notes = JSON.parse(localStorage.getItem(NOTES_KEY)) || [];
-
-                function saveNotes() {
-                    localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
-                }
-
-                function createNoteElement(note) {
-                    const noteEl = document.createElement('div');
-                    noteEl.className = 'sticky-note';
-                    noteEl.style.left = note.left;
-                    noteEl.style.top = note.top;
-                    noteEl.setAttribute('contenteditable', 'true');
-                    noteEl.textContent = note.content;
-                    noteEl.dataset.id = note.id;
-
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'delete-note-btn';
-                    deleteBtn.innerHTML = '&times;';
-                    noteEl.appendChild(deleteBtn);
-
-                    deleteBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        notes = notes.filter(n => n.id != note.id);
-                        saveNotes();
-                        noteEl.remove();
-                    });
-
-                    noteEl.addEventListener('input', () => {
-                        const targetNote = notes.find(n => n.id == note.id);
-                        if(targetNote) {
-                           targetNote.content = noteEl.textContent;
-                           saveNotes();
-                        }
-                    });
-
-                    let activeNote = null, offsetX = 0, offsetY = 0;
-                    noteEl.addEventListener('mousedown', (e) => {
-                        e.stopPropagation();
-                        activeNote = noteEl;
-                        offsetX = e.clientX - activeNote.offsetLeft;
-                        offsetY = e.clientY - activeNote.offsetTop;
-                        document.addEventListener('mousemove', onNoteMove);
-                        document.addEventListener('mouseup', onNoteUp);
-                    });
-                    
-                    function onNoteMove(e) {
-                        if (!activeNote) return;
-                        activeNote.style.left = `${e.clientX - offsetX}px`;
-                        activeNote.style.top = `${e.clientY - offsetY}px`;
-                    }
-
-                    function onNoteUp() {
-                        if (!activeNote) return;
-                        const targetNote = notes.find(n => n.id == note.id);
-                        if(targetNote){
-                            targetNote.left = activeNote.style.left;
-                            targetNote.top = activeNote.style.top;
-                            saveNotes();
-                        }
-                        activeNote = null;
-                        document.removeEventListener('mousemove', onNoteMove);
-                        document.removeEventListener('mouseup', onNoteUp);
-                    }
-                    
-                    container.appendChild(noteEl);
-                }
-
-                addBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const newNote = { id: Date.now(), content: 'New note...', left: '20px', top: '20px' };
-                    notes.push(newNote);
-                    saveNotes();
-                    createNoteElement(newNote);
-                });
-
-                notes.forEach(createNoteElement);
-            }
-			
-			// port from BASIC 
-			async function initStarfieldSimulation() {
-				// define an SVG icon
-				const icon = `<svg class="text-indigo-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path><path d="M14 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2h-4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path></svg>`;
-
-				// widget - add the unique widget id and title
-				// I've given the widget a height (h-80) so the canvas has space to display.
-				const {
-					widget,
-					content
-				} = createWidget('starfield-widget', icon, 'Starfield Simulation', ['w-80', 'h-80']);
-
-				// Define the content with a canvas for the starfield.
-				// The inline style ensures it fills the container.
-				content.innerHTML = `<canvas id="starfield-canvas" style="background-color: #000; width: 100%; height: 100%; display: block; border-radius: 0.5rem;"></canvas>`;
-
-				// Get the canvas element from the content we just set
-				const canvas = content.querySelector('#starfield-canvas');
-				if (!canvas) {
-					console.error("Canvas element not found!");
-					return;
-				}
-
-				const ctx = canvas.getContext('2d');
-
-				setTimeout(() => {
-					// Set canvas resolution to its displayed size
-					canvas.width = canvas.offsetWidth;
-					canvas.height = canvas.offsetHeight;
-
-					const numStars = 800;
-					const stars = [];
-					const speed = 0.9; // Controls how fast the stars move towards the viewer
-
-					for (let i = 0; i < numStars; i++) {
-						stars[i] = {
-							x: (Math.random() - 0.5) * canvas.width, // Random x from -width/2 to +width/2
-							y: (Math.random() - 0.5) * canvas.height, // Random y from -height/2 to +height/2
-							z: Math.random() * canvas.width, // Random depth
-						};
-					}
-
-					function animate() {
-						ctx.fillStyle = 'black';
-						ctx.fillRect(0, 0, canvas.width, canvas.height);
-						
-						ctx.save();
-						ctx.translate(canvas.width / 2, canvas.height / 2);
-						
-						for (let i = 0; i < numStars; i++) {
-							const star = stars[i];
-
-							star.z -= speed;
-
-							if (star.z <= 0) {
-								star.x = (Math.random() - 0.5) * canvas.width;
-								star.y = (Math.random() - 0.5) * canvas.height;
-								star.z = canvas.width;
-							}
-
-							const k = 128.0 / star.z;
-							const px = star.x * k;
-							const py = star.y * k;
-
-							const size = (1 - star.z / canvas.width) * 2.5;
-
-							ctx.beginPath();
-							ctx.fillStyle = 'white';
-							ctx.arc(px, py, size, 0, Math.PI * 2);
-							ctx.fill();
-						}
-
-						ctx.restore();
-
-						requestAnimationFrame(animate);
-					}
-
-					animate();
-					
-					const handleResize = () => {
-						// A small delay to ensure the container has finished resizing and to debounce events
-						setTimeout(() => {
-							if (canvas.offsetWidth > 0 && canvas.offsetHeight > 0) {
-								canvas.width = canvas.offsetWidth;
-								canvas.height = canvas.offsetHeight;
-								
-								// Reset star depths based on the new width to maintain perspective
-								for (let i = 0; i < numStars; i++) {
-									stars[i].z = Math.random() * canvas.width;
-								}
-							}
-						}, 100);
-					};
-					
-					// Use ResizeObserver to watch the widget element for size changes
-					if ('ResizeObserver' in window) {
-						const observer = new ResizeObserver(handleResize);
-						observer.observe(widget); // Observe the widget itself
-					} else {
-						// Fallback for older browsers that don't support ResizeObserver
-						window.addEventListener('resize', handleResize);
-					}
-
-
-				}, 0);
-
-				//	do not forget to add this new child to our dashboard-container
-				document.getElementById('dashboard-container').appendChild(widget);
-			}
-
-			
-			// comment out initBasicWidget(); in main() function to use this
-			async function initBasicWidget() {
-				// define an SVG icon
-				const icon = `<svg class="text-indigo-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path><path d="M14 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2h-4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path></svg>`;
-
-				// widget - add the unique widget id and title
-				const { widget, content } = createWidget('about-widget', icon, 'Basic Widget', ['w-80']);
-
-				// define the content
-				content.innerHTML = `
-					<blockquote id="about-text" class="text-lg italic text-center">Basic Widget</blockquote>
-					<blockquote id="about-text" class="text-lg italic text-center">Basic Widget</blockquote>
-					<blockquote id="about-text" class="text-lg italic text-center">Basic Widget</blockquote>
-					<blockquote id="about-text" class="text-lg italic text-center">Basic Widget</blockquote>
-					<blockquote id="about-text" class="text-lg italic text-center">Basic Widget</blockquote>
-					<blockquote id="about-text" class="text-lg italic text-center">Basic Widget</blockquote>`;
-
-				//	do not forget to add this new child to our dashboard-container
-				document.getElementById('dashboard-container').appendChild(widget);
-			}
-			
-			
-			async function initPetGame() {
-				// 1. DEFINE WIDGET METADATA
-				const icon = `<svg class="text-indigo-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a8 8 0 0 0 8-8 8 8 0 0 0-8-8 8 8 0 0 0-8 8 8 8 0 0 0 8 8Z"></path><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"></path><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>`;
-				const {
-					widget,
-					content
-				} = createWidget('tamagotchi-widget', icon, 'Digital Pal', ['w-80', 'h-96']);
-
-				// 2. DEFINE THE GAME'S HTML & CSS STRUCTURE
-				content.innerHTML = `
-					<style>
-						/* Animations for the pet */
-						#pet-svg { transition: transform 0.2s ease-in-out; }
-						.pet-idle { animation: bob 2s ease-in-out infinite; }
-						@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-						.pet-happy { animation: happy-jiggle 0.5s ease; }
-						@keyframes happy-jiggle { 0%, 100% { transform: scale(1); } 25% { transform: scale(1.05) rotate(5deg); } 75% { transform: scale(0.95) rotate(-5deg); } }
-						.pet-dirty-overlay { opacity: 0.6; }
-						.interactive-item { cursor: pointer; transition: transform 0.2s ease; }
-						.interactive-item:hover { transform: scale(1.1); }
-					</style>
-					<div id="game-container" class="flex flex-col h-full p-4 bg-gray-800 text-white rounded-lg select-none">
-						<!-- Screen Area -->
-						<div class="flex-grow bg-gray-900 rounded-md border-4 border-gray-700 flex flex-col items-center p-2 min-h-0">
-							<div id="pet-age" class="text-sm text-gray-400 self-start">Age: 0 days</div>
-							
-							<!-- Pet and interactive items container -->
-							<div class="relative w-full flex-grow flex items-center justify-center my-2">
-								<div id="pet-visual" class="relative cursor-pointer">
-									<svg id="pet-svg" class="pet-idle" width="120" height="120" viewBox="0 0 120 120">
-										<defs>
-											<filter id="dirty-texture" x="0" y="0" width="100%" height="100%">
-												<feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" result="noise"/>
-												<feDiffuseLighting in="noise" lighting-color="#8B4513" surfaceScale="2">
-													<feDistantLight azimuth="45" elevation="60"/>
-												</feDiffuseLighting>
-											</filter>
-										</defs>
-										<!-- Body -->
-										<circle cx="60" cy="60" r="50" fill="#81e6d9"/>
-										 <!-- Blush -->
-										<circle cx="35" cy="65" r="10" fill="#fbb6ce" opacity="0.7"/>
-										<circle cx="85" cy="65" r="10" fill="#fbb6ce" opacity="0.7"/>
-										<!-- Eyes -->
-										<g id="pet-eyes-happy">
-											<circle cx="45" cy="50" r="8" fill="white"/>
-											<circle cx="75" cy="50" r="8" fill="white"/>
-											<circle cx="47" cy="52" r="4" fill="black"/>
-											<circle cx="77" cy="52" r="4" fill="black"/>
-										</g>
-										 <!-- Mouth -->
-										<path id="pet-mouth-happy" d="M 45 75 Q 60 90 75 75" stroke="white" stroke-width="4" fill="none" stroke-linecap="round"/>
-										
-										<!-- Sad Face (hidden by default) -->
-										<g id="pet-face-sad" style="display: none;">
-											<path d="M 40 55 Q 45 50 50 55" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
-											<path d="M 70 55 Q 75 50 80 55" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
-											<path d="M 45 80 Q 60 70 75 80" stroke="white" stroke-width="4" fill="none" stroke-linecap="round"/>
-										</g>
-
-										<rect id="dirty-overlay" width="120" height="120" filter="url(#dirty-texture)" class="pet-dirty-overlay" style="display: none;"/>
-									</svg>
-								</div>
-								<div id="food-item" class="interactive-item absolute bottom-2 left-2 text-4xl">🍖</div>
-								<div id="toy-item" class="interactive-item absolute bottom-2 right-2 text-4xl">🎾</div>
-								<div id="shower-item" class="interactive-item absolute top-2 right-2 text-4xl">🚿</div>
-							</div>
-
-							<div id="pet-message" class="text-center text-xs h-8 flex-shrink-0">I'm happy!</div>
-							
-							<!-- Stats Bars -->
-							<div class="w-full px-4 flex-shrink-0">
-								<div class="mb-1">
-									<span class="text-xs">HUNGER</span>
-									<div class="w-full bg-gray-700 rounded-full h-3"><div id="hunger-bar" class="bg-green-500 h-3 rounded-full transition-all duration-500" style="width: 100%"></div></div>
-								</div>
-								<div class="mb-1">
-									<span class="text-xs">HAPPINESS</span>
-									<div class="w-full bg-gray-700 rounded-full h-3"><div id="happiness-bar" class="bg-blue-500 h-3 rounded-full transition-all duration-500" style="width: 100%"></div></div>
-								</div>
-								<div>
-									<span class="text-xs">CLEANLINESS</span>
-									<div class="w-full bg-gray-700 rounded-full h-3"><div id="cleanliness-bar" class="bg-yellow-500 h-3 rounded-full transition-all duration-500" style="width: 100%"></div></div>
-								</div>
-							</div>
-						</div>
-						 <div id="reset-container" class="hidden justify-around mt-4">
-							<button id="reset-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">New Pal</button>
-						</div>
-					</div>
-				`;
-
-				// 3. GAME LOGIC AND STATE MANAGEMENT
-				const MAX_STAT = 100;
-				const STAT_DECAY_RATE = 3; // points per minute
-				const CLEAN_DECAY_RATE = 1; // points per minute
-				const AGE_RATE = 1000 * 60 * 5; // 1 day older every 5 minutes
-				const SAVE_INTERVAL = 5000;
-
-				let pet = {};
-
-				// Get references to UI elements
-				const petVisual = content.querySelector('#pet-visual');
-				const petSvg = content.querySelector('#pet-svg');
-				const dirtyOverlay = content.querySelector('#dirty-overlay');
-				const petAge = content.querySelector('#pet-age');
-				const petMessage = content.querySelector('#pet-message');
-				const hungerBar = content.querySelector('#hunger-bar');
-				const happinessBar = content.querySelector('#happiness-bar');
-				const cleanlinessBar = content.querySelector('#cleanliness-bar');
-				const resetContainer = content.querySelector('#reset-container');
-				const allItems = content.querySelectorAll('.interactive-item');
-
-				function initializeNewPet() {
-					pet = {
-						hunger: MAX_STAT,
-						happiness: MAX_STAT,
-						cleanliness: MAX_STAT,
-						birthTime: Date.now(),
-						lastUpdate: Date.now(),
-						isAlive: true,
-					};
-				}
-
-				function saveState() {
-					if (pet) {
-						localStorage.setItem('tamagotchiState', JSON.stringify(pet));
-					}
-				}
-
-				function loadState() {
-					const savedState = localStorage.getItem('tamagotchiState');
-					if (savedState) {
-						pet = JSON.parse(savedState);
-						// Ensure cleanliness exists for older save files
-						if (pet.cleanliness === undefined) {
-							pet.cleanliness = MAX_STAT;
-						}
-						const timePassed = Date.now() - pet.lastUpdate;
-						const minutesPassed = timePassed / (1000 * 60);
-						const decayAmount = Math.floor(minutesPassed * STAT_DECAY_RATE);
-						const cleanDecayAmount = Math.floor(minutesPassed * CLEAN_DECAY_RATE);
-
-						pet.hunger = Math.max(0, pet.hunger - decayAmount);
-						pet.happiness = Math.max(0, pet.happiness - decayAmount);
-						pet.cleanliness = Math.max(0, pet.cleanliness - cleanDecayAmount);
-
-						if (pet.hunger === 0 || pet.happiness === 0) {
-							pet.isAlive = false;
-						}
-						pet.lastUpdate = Date.now();
-					} else {
-						initializeNewPet();
-					}
-				}
-
-				function updateUI() {
-					if (!pet.isAlive) {
-						petSvg.style.display = 'none';
-						petVisual.innerHTML += '<div class="text-6xl">💀</div>';
-						petMessage.textContent = "I've gone to the digital beyond...";
-						allItems.forEach(item => item.classList.add('hidden'));
-						resetContainer.classList.remove('hidden');
-						hungerBar.style.width = '0%';
-						happinessBar.style.width = '0%';
-						cleanlinessBar.style.width = '0%';
-						return;
-					}
-
-					// Update stats bars
-					hungerBar.style.width = `${pet.hunger}%`;
-					happinessBar.style.width = `${pet.happiness}%`;
-					cleanlinessBar.style.width = `${pet.cleanliness}%`;
-
-					// Update age
-					const ageInMs = Date.now() - pet.birthTime;
-					const ageInDays = Math.floor(ageInMs / AGE_RATE);
-					petAge.textContent = `Age: ${ageInDays} days`;
-
-					// Update visual state
-					dirtyOverlay.style.display = pet.cleanliness < 40 ? 'block' : 'none';
-
-					// Update message based on state priority
-					if (pet.hunger < 30) {
-						petMessage.textContent = 'My tummy is rumbling...';
-					} else if (pet.cleanliness < 40) {
-						petMessage.textContent = 'I feel a bit grimy...';
-					} else if (pet.happiness < 30) {
-						petMessage.textContent = 'I feel so lonely...';
-					} else if (pet.happiness > 80 && pet.hunger > 80) {
-						petMessage.textContent = 'I love you!';
-					} else {
-						petMessage.textContent = "Everything's pretty good!";
-					}
-				}
-
-				function triggerAnimation(animationClass) {
-					petSvg.classList.remove('pet-idle');
-					petSvg.classList.add(animationClass);
-					setTimeout(() => {
-						petSvg.classList.remove(animationClass);
-						petSvg.classList.add('pet-idle');
-					}, 500); // Animation duration
-				}
-
-				function feedPet() {
-					if (!pet.isAlive) return;
-					pet.hunger = Math.min(MAX_STAT, pet.hunger + 20);
-					pet.cleanliness = Math.max(0, pet.cleanliness - 5); // Eating is messy
-					petMessage.textContent = 'Yum! That was delicious!';
-					triggerAnimation('pet-happy');
-					updateUI();
-				}
-
-				function playWithPet() {
-					if (!pet.isAlive) return;
-					pet.happiness = Math.min(MAX_STAT, pet.happiness + 20);
-					pet.hunger = Math.max(0, pet.hunger - 5); // Playing uses energy
-					petMessage.textContent = 'Weee! That was fun!';
-					triggerAnimation('pet-happy');
-					updateUI();
-				}
-
-				function patPet() {
-					if (!pet.isAlive) return;
-					pet.happiness = Math.min(MAX_STAT, pet.happiness + 5);
-					petMessage.textContent = 'Hehe, that tickles!';
-					triggerAnimation('pet-happy');
-					updateUI();
-				}
-
-				function cleanPet() {
-					if (!pet.isAlive) return;
-					pet.cleanliness = MAX_STAT;
-					petMessage.textContent = 'So fresh and so clean!';
-					triggerAnimation('pet-happy');
-					updateUI();
-				}
-
-				function resetGame() {
-					localStorage.removeItem('tamagotchiState');
-					window.location.reload(); // Easiest way to reset the widget state
-				}
-
-				function gameLoop() {
-					if (!pet.isAlive) {
-						saveState();
-						return;
-					}
-
-					const timeSinceLastUpdate = Date.now() - pet.lastUpdate;
-					const minutesPassed = timeSinceLastUpdate / (1000 * 60);
-
-					pet.hunger = Math.max(0, pet.hunger - (minutesPassed * STAT_DECAY_RATE));
-					pet.happiness = Math.max(0, pet.happiness - (minutesPassed * STAT_DECAY_RATE));
-					pet.cleanliness = Math.max(0, pet.cleanliness - (minutesPassed * CLEAN_DECAY_RATE));
-
-					// Happiness decays faster if other stats are low
-					if (pet.hunger < 50) pet.happiness = Math.max(0, pet.happiness - (minutesPassed * 0.5));
-					if (pet.cleanliness < 50) pet.happiness = Math.max(0, pet.happiness - (minutesPassed * 0.5));
-
-
-					if (pet.hunger === 0 || pet.happiness === 0) {
-						pet.isAlive = false;
-					}
-
-					pet.lastUpdate = Date.now();
-					updateUI();
-				}
-
-				// 4. INITIALIZE AND START THE GAME
-				loadState();
-
-				// Attach event listeners
-				petVisual.addEventListener('click', patPet);
-				content.querySelector('#food-item').addEventListener('click', feedPet);
-				content.querySelector('#toy-item').addEventListener('click', playWithPet);
-				content.querySelector('#shower-item').addEventListener('click', cleanPet);
-				content.querySelector('#reset-button').addEventListener('click', resetGame);
-
-				// Start game loops
-				setInterval(gameLoop, 1000);
-				setInterval(saveState, SAVE_INTERVAL);
-
-				//	do not forget to add this new child to our dashboard-container
-				document.getElementById('dashboard-container').appendChild(widget);
-			}
-
-            // --- Main Execution ---
+            // --- MAIN EXECUTION ---
             async function main() {
-                // Create all widgets first
-                initWeatherWidget();
-                initClockWidget();
-                initCalendarWidget();
-                initTodoListWidget();
-                initNotesWidget();
-				initStarfieldSimulation();
-				//initBasicWidget();
-				initPetGame();
-				
+                // Apply saved settings first
+                applySavedSettings();
 
-                // Then apply core functionality to all of them
+                // Create all default widgets
+                initDefaultWidgets();
+				
+				// 3rd party widgets
+				await initPetGame();
+
+                // Apply core functionality to all of them
                 document.querySelectorAll('.widget').forEach(applyCoreWidgetFunctionality);
 
-                // Then initialize the context menu
+                // Initialize the context menu
                 initContextMenu();
 
-                // Finally, load their positions
+                // Finally, load their positions from storage, or apply default
                 loadWidgetPositions();
             }
 
             main();
         });
     </script>
-
 </body>
 </html>
