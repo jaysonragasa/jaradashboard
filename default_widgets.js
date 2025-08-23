@@ -742,8 +742,7 @@ async function initSpotifyWidget() {
 	const { widget, content } = createWidget('spotify-widget', icon, 'Spotify Player', ['w-96']);
 
 	// default "Top Picks" embed (fallback if nothing saved)
-	const defaultEmbed = `<div>
-			<iframe 
+	const defaultEmbed = `<iframe 
 				style="border-radius:12px; min-height:380px;"
 				src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M?utm_source=generator"
 				width="100%" 
@@ -751,8 +750,7 @@ async function initSpotifyWidget() {
 				frameborder="0" 
 				allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
 				loading="lazy">
-			</iframe>
-		</div>`;
+			</iframe>`;
 
 	// load saved embed src or fallback
 	let embedSrc = localStorage.getItem("spotifyEmbedSrc") || defaultEmbed;
@@ -781,7 +779,7 @@ async function initSpotifyWidget() {
 	function renderConfig() {
 		content.innerHTML = `
 			<div class="">
-				<label class="block text-sm font-medium mb-1">Spotify Embed URL</label>
+				<label class="block text-sm font-medium mb-1">Spotify Embed Code</label>
 				<textarea id="embed-input" 
 					class="w-full border rounded p-2 text-sm bg-white text-gray-800"
 					rows="3">${embedSrc}</textarea>
