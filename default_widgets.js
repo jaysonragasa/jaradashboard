@@ -742,7 +742,17 @@ async function initSpotifyWidget() {
 	const { widget, content } = createWidget('spotify-widget', icon, 'Spotify Player', ['w-96']);
 
 	// default "Top Picks" embed (fallback if nothing saved)
-	const defaultEmbed = "https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M?utm_source=generator";
+	const defaultEmbed = `<div>
+			<iframe 
+				style="border-radius:12px; min-height:380px;"
+				src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M?utm_source=generator"
+				width="100%" 
+				height="380" 
+				frameborder="0" 
+				allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+				loading="lazy">
+			</iframe>
+		</div>`;
 
 	// load saved embed src or fallback
 	let embedSrc = localStorage.getItem("spotifyEmbedSrc") || defaultEmbed;
