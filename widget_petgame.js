@@ -1,6 +1,6 @@
 async function initPetGame() {
 	// define an SVG icon
-	const icon = `<svg class="text-indigo-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path><path d="M14 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2h-4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path></svg>`;
+	const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 128 128"><path d="M32 80c0 16 14 28 32 28s32-12 32-28c0-4-2-8-4-12l-12 8-8-10-8 10-8-10-12 10-8-6c-2 4-4 8-4 10z" fill="#fffaf0" stroke="#d8c1a3" stroke-width="3"/><circle cx="64" cy="64" r="18" fill="#ffeb3b" stroke="#d4b830" stroke-width="2"/><circle cx="58" cy="60" r="2.5" fill="#000"/><circle cx="70" cy="60" r="2.5" fill="#000"/><path d="M64 64l4 4-4 2-4-2z" fill="#f57c00"/><path d="M40 48l8 6 6-6 6 8 6-8 6 6 8-6" fill="none" stroke="#d8c1a3" stroke-width="3"/></svg>`;
 
 	// widget - add the unique widget id and title
 	const { widget, content } = createWidget('tamagotchi-widget', icon, 'My Cuddly Pet', ['w-full', 'max-w-sm', 'mx-auto']);

@@ -184,7 +184,6 @@ async function initWeatherWidget() {
     getLocation();
 }
 
-
 function initCalendarWidget() {
 	const icon = `<svg class="text-purple-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>`;
 	const { widget, content } = createWidget('calendar-widget', icon, 'Calendar', ['w-80']);
@@ -410,13 +409,74 @@ function initTodoListWidget() {
 }
 
 function initNotesWidget() {
+    function injectStyles() {
+        const styleId = 'notes-widget-styles';
+        if (document.getElementById(styleId)) {
+            return;
+        }
+
+        const css = `
+            .sticky-note {
+                resize: both;
+                overflow: auto;
+                padding: 10px;
+                box-sizing: border-box;
+                position: absolute;
+                border: 1px solid #ccc;
+                box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            }
+            .note-content {
+                outline: none;
+                padding-right: 20px; /* Space for the delete button */
+                padding-bottom: 25px; /* Space for the toolbar */
+            }
+            .delete-note-btn {
+                position: absolute;
+                top: 5px;
+                right: 5px;
+                border: none;
+                background: none;
+                font-size: 16px;
+                cursor: pointer;
+                line-height: 1;
+                padding: 0;
+                color: #888;
+            }
+            .delete-note-btn:hover {
+                color: #333;
+            }
+            .note-toolbar {
+                position: absolute;
+                bottom: 4px; /* Moved to the bottom */
+                right: 30px;
+            }
+            .color-dot {
+                display: inline-block;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                border: 1px solid #555;
+                cursor: pointer;
+                margin: 0 2px;
+            }
+        `;
+
+        const styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        styleElement.innerHTML = css;
+        document.head.appendChild(styleElement);
+    }
+
+    injectStyles();
+
 	const icon = `<svg class="text-yellow-200" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>`;
 	const { widget, content } = createWidget('notes-widget', icon, 'Sticky Notes', ['w-96']);
-	
+
 	content.innerHTML = `<div id="notes-container"><button id="add-note-btn">+</button></div>`;
 	document.getElementById('dashboard-container').appendChild(widget);
 
 	const NOTES_KEY = 'dashboardStickyNotes';
+	const COLORS = ["#ffc", "#cfc", "#ccf", "#fcc", "#cff", "#fcf"];
 	const container = content.querySelector('#notes-container');
 	const addBtn = content.querySelector('#add-note-btn');
 	let notes = JSON.parse(localStorage.getItem(NOTES_KEY)) || [];
@@ -430,9 +490,39 @@ function initNotesWidget() {
 		noteEl.className = 'sticky-note';
 		noteEl.style.left = note.left;
 		noteEl.style.top = note.top;
-		noteEl.setAttribute('contenteditable', 'true');
-		noteEl.textContent = note.content;
+		noteEl.style.width = note.width;
+		noteEl.style.height = note.height;
+		noteEl.style.backgroundColor = note.color;
 		noteEl.dataset.id = note.id;
+
+        const toolbar = document.createElement('div');
+        toolbar.className = 'note-toolbar';
+        COLORS.forEach(color => {
+            const colorDot = document.createElement('span');
+            colorDot.className = 'color-dot';
+            colorDot.style.backgroundColor = color;
+            colorDot.dataset.color = color;
+            toolbar.appendChild(colorDot);
+        });
+        toolbar.addEventListener('click', (e) => {
+            if (e.target.classList.contains('color-dot')) {
+                e.stopPropagation();
+                const newColor = e.target.dataset.color;
+                noteEl.style.backgroundColor = newColor;
+                const targetNote = notes.find(n => n.id == note.id);
+                if (targetNote) {
+                    targetNote.color = newColor;
+                    saveNotes();
+                }
+            }
+        });
+        noteEl.appendChild(toolbar);
+
+        const contentEl = document.createElement('div');
+        contentEl.className = 'note-content';
+        contentEl.setAttribute('contenteditable', 'true');
+        contentEl.textContent = note.content;
+        noteEl.appendChild(contentEl);
 
 		const deleteBtn = document.createElement('button');
 		deleteBtn.className = 'delete-note-btn';
@@ -446,16 +536,19 @@ function initNotesWidget() {
 			noteEl.remove();
 		});
 
-		noteEl.addEventListener('input', () => {
+		contentEl.addEventListener('input', () => {
 			const targetNote = notes.find(n => n.id == note.id);
 			if(targetNote) {
-			   targetNote.content = noteEl.textContent;
-			   saveNotes();
+			    targetNote.content = contentEl.textContent;
+			    saveNotes();
 			}
 		});
 
 		let activeNote = null, offsetX = 0, offsetY = 0;
 		noteEl.addEventListener('mousedown', (e) => {
+            const handleSize = 16;
+            if (e.offsetX > noteEl.offsetWidth - handleSize && e.offsetY > noteEl.offsetHeight - handleSize) return;
+            if (e.target.classList.contains('color-dot') || e.target === contentEl) return;
 			e.stopPropagation();
 			activeNote = noteEl;
 			offsetX = e.clientX - activeNote.offsetLeft;
@@ -463,8 +556,9 @@ function initNotesWidget() {
 			document.addEventListener('mousemove', onNoteMove);
 			document.addEventListener('mouseup', onNoteUp);
 		});
-		
+
 		function onNoteMove(e) {
+			e.preventDefault();
 			if (!activeNote) return;
 			activeNote.style.left = `${e.clientX - offsetX}px`;
 			activeNote.style.top = `${e.clientY - offsetY}px`;
@@ -482,13 +576,31 @@ function initNotesWidget() {
 			document.removeEventListener('mousemove', onNoteMove);
 			document.removeEventListener('mouseup', onNoteUp);
 		}
-		
+
+        const resizeObserver = new ResizeObserver(() => {
+            const targetNote = notes.find(n => n.id == note.id);
+            if (targetNote) {
+                targetNote.width = noteEl.style.width;
+                targetNote.height = noteEl.style.height;
+                saveNotes();
+            }
+        });
+        resizeObserver.observe(noteEl);
+
 		container.appendChild(noteEl);
 	}
 
 	addBtn.addEventListener('click', (e) => {
 		e.stopPropagation();
-		const newNote = { id: Date.now(), content: 'New note...', left: '20px', top: '20px' };
+		const newNote = {
+            id: Date.now(),
+            content: 'New note...',
+            left: '20px',
+            top: '20px',
+            width: '250px',
+            height: '250px',
+            color: COLORS.length > 0 ? COLORS[(notes.length) % COLORS.length] : '#ffc'
+		};
 		notes.push(newNote);
 		saveNotes();
 		createNoteElement(newNote);
@@ -500,7 +612,7 @@ function initNotesWidget() {
 // port from BASIC 
 async function initStarfieldSimulation() {
 	// define an SVG icon
-	const icon = `<svg class="text-indigo-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path><path d="M14 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2h-4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path></svg>`;
+	const icon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="black" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" fill="black"/><circle cx="4" cy="6" r="1" fill="white"/><circle cx="18" cy="4" r="1.5" fill="white"/><circle cx="10" cy="12" r="0.8" fill="white"/><circle cx="20" cy="18" r="1.2" fill="white"/><circle cx="7" cy="19" r="1" fill="white"/><circle cx="12" cy="3" r="0.6" fill="white"/><circle cx="2" cy="15" r="0.9" fill="white"/><circle cx="22" cy="9" r="0.7" fill="white"/><circle cx="15" cy="21" r="1.1" fill="white"/><circle cx="5" cy="2" r="0.5" fill="white"/><circle cx="19" cy="11" r="0.8" fill="white"/><circle cx="3" cy="22" r="0.6" fill="white"/><circle cx="21" cy="5" r="0.9" fill="white"/><circle cx="9" cy="17" r="0.7" fill="white"/></svg>`;
 
 	// widget - add the unique widget id and title
 	// I've given the widget a height (h-80) so the canvas has space to display.
