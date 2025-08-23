@@ -39,7 +39,7 @@ SOFTWARE.
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             touch-action: none; /* Prevent default touch actions like scrolling when dragging */
-            background-image: url('https://images.pexels.com/photos/1025469/pexels-photo-1025469.jpeg');
+            background-image: linear-gradient(rgba(0, 0, 0, 0.8),rgba(0, 0, 0, 0.6)), url('https://images.pexels.com/photos/1025469/pexels-photo-1025469.jpeg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -224,13 +224,27 @@ SOFTWARE.
 		const BACKGROUND_URL_KEY = 'backgroundImageURL';
 		const BACKGROUND_HIDDEN_KEY = 'backgroundHidden';
 		let highestZ = 10;
+		
+		function setBackgroundWallpaper(
+		  url,
+		  backdropStartOpacity = 0.3,
+		  backdropEndOpacity = 0.0
+		) {
+		  document.body.style.backgroundImage = `
+			linear-gradient(
+			  rgba(0, 0, 0, ${backdropStartOpacity}),
+			  rgba(0, 0, 0, ${backdropEndOpacity})
+			),
+			url('${url}')
+		  `;
+		}
 
 		// --- INITIAL PAGE LOAD ---
 		function applySavedSettings() {
 			// Apply background image
 			const savedBgUrl = localStorage.getItem(BACKGROUND_URL_KEY);
 			if (savedBgUrl) {
-				document.body.style.backgroundImage = `url('${savedBgUrl}')`;
+				setBackgroundWallpaper(savedBgUrl);
 			}
 
 			// Apply background visibility
@@ -580,7 +594,7 @@ SOFTWARE.
                 saveBtn.addEventListener('click', () => {
                     const newUrl = input.value.trim();
                     if (newUrl) {
-                        document.body.style.backgroundImage = `url('${newUrl}')`;
+						setBackgroundWallpaper(newUrl);
                         localStorage.setItem(BACKGROUND_URL_KEY, newUrl);
                     }
                 });
