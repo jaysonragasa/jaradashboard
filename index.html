@@ -56,54 +56,54 @@ SOFTWARE.
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(9px);
             -webkit-backdrop-filter: blur(9px);
-			border-radius: 20px;
+            border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.3);
-			box-shadow: 
-				0 8px 32px rgba(0, 0, 0, 0.3),
-				inset 0 1px 0 rgba(255, 255, 255, 0.5),
-				inset 0 -1px 0 rgba(255, 255, 255, 0.1),
-				inset 0 0 14px 7px rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 0 14px 7px rgba(255, 255, 255, 0.1);
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, width 0.3s ease-in-out, height 0.3s ease-in-out;
             z-index: 10;
             overflow: hidden;
             min-width: 280px; /* Prevent widgets from becoming too small */
             min-height: 200px;
-			padding-bottom: 50px;
+            padding-bottom: 50px;
         }
-		
-		.widget::before {
-		  content: '';
-		  position: absolute;
-		  top: 0;
-		  left: 0;
-		  right: 0;
-		  height: 1px;
-		  background: linear-gradient(
-			90deg,
-			transparent,
-			rgba(255, 255, 255, 0.8),
-			transparent
-		  );
-		}
+        
+        .widget::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.8),
+                transparent
+            );
+        }
 
-		.widget::after {
-		  content: '';
-		  position: absolute;
-		  top: 0;
-		  left: 0;
-		  width: 1px;
-		  height: 100%;
-		  background: linear-gradient(
-			180deg,
-			rgba(255, 255, 255, 0.8),
-			transparent,
-			rgba(255, 255, 255, 0.3)
-		  );
-		}
-		
+        .widget::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(
+                180deg,
+                rgba(255, 255, 255, 0.8),
+                transparent,
+                rgba(255, 255, 255, 0.3)
+            );
+        }
+        
         .dark .widget {
-             background: rgba(17, 24, 39, 0.1);
-             border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(17, 24, 39, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .widget-header {
@@ -127,8 +127,8 @@ SOFTWARE.
         }
         .widget.minimized .widget-content, .widget.minimized .widget-header .title-text, .widget.minimized .resize-gripper { display: none; }
         .widget.minimized .widget-header .icon-container { margin: 0; }
-		
-		.resize-gripper {
+        
+        .resize-gripper {
             position: absolute;
             bottom: 5px;
             right: 5px;
@@ -200,433 +200,797 @@ SOFTWARE.
         <!-- Widgets will be dynamically inserted here -->
     </div>
 
+    <!-- Event Modal (Existing) -->
     <div id="event-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div class="bg-gray-800 p-6 rounded-lg shadow-xl w-96"><h3 class="text-lg font-bold mb-4">Add Event</h3><input type="text" id="event-input" class="w-full bg-gray-700 text-white rounded-md p-2 mb-4 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="Event details..."><div class="flex justify-end space-x-2"><button id="cancel-event-btn" class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-500">Cancel</button><button id="save-event-btn" class="px-4 py-2 bg-purple-500 rounded-md hover:bg-purple-600">Save</button></div></div>
     </div>
     
+    <!-- Context Menu (Updated) -->
     <div id="context-menu-container" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div class="bg-gray-800 p-2 rounded-lg shadow-xl w-60 flex flex-col space-y-1">
-             <button id="reset-widgets-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Reset Widgets</button>
-             <button id="toggle-collapse-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Collapse All Widgets</button>
-             <button id="toggle-bg-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Toggle Background</button>
-             <div class="border-t border-gray-700 my-1"></div>
-             <button id="show-settings-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Settings</button>
+            <button id="add-widget-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Add Widget</button>
+            <button id="reset-widgets-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Reset Widgets</button>
+            <button id="toggle-collapse-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Collapse All Widgets</button>
+            <button id="toggle-bg-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Toggle Background</button>
+            <div class="border-t border-gray-700 my-1"></div>
+            <button id="show-settings-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Settings</button>
+            <div class="border-t border-gray-700 my-1"></div>
+            <button class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">OpenDashboard 2.0</button>
         </div>
     </div>
-	
-	<script src="default_widgets.js"></script>
-	<script src="widget_petgame.js"></script>
+
+    <!-- NEW Widget Editor Modal -->
+    <div id="widget-editor-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" style="display: none;">
+        <div class="bg-gray-800 p-6 rounded-lg shadow-xl w-[90vw] max-w-[380px] max-h-[90vh] flex flex-col">
+            <h3 id="widget-editor-title" class="text-lg font-bold mb-4">Add New Widget</h3>
+            <div class="flex-grow flex flex-col space-y-4 overflow-hidden">
+                <div>
+                    <label for="widget-title-input" class="block text-sm font-medium text-gray-300 mb-1">Widget Title</label>
+                    <input type="text" id="widget-title-input" class="w-full bg-white/10 text-white rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-400">
+                </div>
+                <div>
+                    <label for="widget-icon-input" class="block text-sm font-medium text-gray-300 mb-1">Icon SVG</label>
+                    <textarea id="widget-icon-input" rows="2" class="w-full bg-white/10 text-white rounded-md p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-400"></textarea>
+                </div>
+                <div>
+                    <label for="widget-code-input" class="block text-sm font-medium text-gray-300 mb-1">Widget Code (HTML & Script)</label>
+                    <textarea id="widget-code-input" class="w-full bg-gray-700 text-white rounded-md p-2 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-400 h-[200px]" placeholder="Enter widget HTML and script code here..."></textarea>
+                </div>
+                <div id="widget-preview" class="w-full bg-gray-900 border border-gray-700 rounded-md p-4 text-center text-gray-400 overflow-auto flex-grow h-[200px]">
+                    Preview will appear here.
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 mt-4">
+                <button id="preview-widget-btn" class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-500">Preview</button>
+                <button id="cancel-widget-btn" class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-500">Cancel</button>
+                <button id="save-widget-btn" class="px-4 py-2 bg-purple-500 rounded-md hover:bg-purple-600">Save Widget</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="default_widgets.js"></script>
+    <script src="widget_petgame.js"></script>
 
     <script>
-		// --- GLOBAL CONFIG & STATE ---
-		const WIDGET_POSITIONS_KEY = 'dashboardWidgetPositions';
-		const TODO_ITEMS_KEY = 'todoListItems';
-		const BACKGROUND_URL_KEY = 'backgroundImageURL';
-		const BACKGROUND_HIDDEN_KEY = 'backgroundHidden';
-		let highestZ = 10;
-		
-		function setBackgroundWallpaper(
-		  url,
-		  backdropStartOpacity = 0.3,
-		  backdropEndOpacity = 0.0
-		) {
-		  document.body.style.backgroundImage = `
-			linear-gradient(
-			  rgba(0, 0, 0, ${backdropStartOpacity}),
-			  rgba(0, 0, 0, ${backdropEndOpacity})
-			),
-			url('${url}')
-		  `;
-		}
+        // --- GLOBAL CONFIG & STATE ---
+        const LS_WIDGET_POSITIONS_KEY = 'OpenDashboard_DashboardWidgetPositions';
+        const LS_TODO_ITEMS_KEY = 'OpenDashboard_TodoListItems';
+        const LS_BACKGROUND_URL_KEY = 'OpenDashboard_BackgroundImageURL';
+        const LS_BACKGROUND_HIDDEN_KEY = 'OpenDashboard_BackgroundHidden';
+        const LS_CUSTOM_WIDGETS_KEY = 'OpenDashboard_CustomWidgets'; // New key for custom widgets
+        
+        // Use this global variable to show or hide the close button on custom widgets
+        const SHOW_WIDGET_CLOSE_BUTTON = true;
 
-		// --- INITIAL PAGE LOAD ---
-		function applySavedSettings() {
-			// Apply background image
-			const savedBgUrl = localStorage.getItem(BACKGROUND_URL_KEY);
-			if (savedBgUrl) {
-				setBackgroundWallpaper(savedBgUrl);
-			}
+        let highestZ = 10;
+        
+        const DEFAULT_WIDGET_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-300"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7.5 12 12.72 20.71 7.5"></polyline><line x1="12" y1="22.72" x2="12" y2="12"></line></svg>`;
 
-			// Apply background visibility
-			const isBgHidden = localStorage.getItem(BACKGROUND_HIDDEN_KEY) === 'true';
-			if (isBgHidden) {
-				document.body.classList.add('bg-hidden');
-			}
-		}
+        function setBackgroundWallpaper(
+            url,
+            backdropStartOpacity = 0.3,
+            backdropEndOpacity = 0.0
+        ) {
+            document.body.style.backgroundImage = `
+                linear-gradient(
+                    rgba(0, 0, 0, ${backdropStartOpacity}),
+                    rgba(0, 0, 0, ${backdropEndOpacity})
+                ),
+                url('${url}')
+            `;
+        }
 
-		function saveWidgetPositions() {
-			const positions = {};
-			document.querySelectorAll('.widget').forEach(widget => {
-				positions[widget.id] = { 
-					left: widget.style.left, 
-					top: widget.style.top,
-					width: widget.style.width,
-					height: widget.style.height,
-					isMinimized: widget.classList.contains('minimized')
-				};
-			});
-			localStorage.setItem(WIDGET_POSITIONS_KEY, JSON.stringify(positions));
-		}
+        function applySavedSettings() {
+            // Apply background image
+            const savedBgUrl = localStorage.getItem(LS_BACKGROUND_URL_KEY);
+            if (savedBgUrl) {
+                setBackgroundWallpaper(savedBgUrl);
+            }
 
+            // Apply background visibility
+            const isBgHidden = localStorage.getItem(LS_BACKGROUND_HIDDEN_KEY) === 'true';
+            if (isBgHidden) {
+                document.body.classList.add('bg-hidden');
+            }
+        }
+
+        function saveWidgetPositions() {
+            const positions = {};
+            document.querySelectorAll('.widget').forEach(widget => {
+                positions[widget.id] = { 
+                    left: widget.style.left, 
+                    top: widget.style.top,
+                    width: widget.style.width,
+                    height: widget.style.height,
+                    isMinimized: widget.classList.contains('minimized')
+                };
+            });
+            localStorage.setItem(LS_WIDGET_POSITIONS_KEY, JSON.stringify(positions));
+        }
+
+        function saveWidgetPosition(key, json) {
+            // thing of something 
+            // LOL
+        }
+        
 		function loadWidgetPositions() {
-			const savedPositions = JSON.parse(localStorage.getItem(WIDGET_POSITIONS_KEY));
+			const savedPositions = JSON.parse(localStorage.getItem(LS_WIDGET_POSITIONS_KEY));
 			if (savedPositions) {
 				Object.keys(savedPositions).forEach(id => {
-					const widget = document.getElementById(id);
-					if (widget) {
-						widget.style.left = savedPositions[id].left;
-						widget.style.top = savedPositions[id].top;
-						if (savedPositions[id].width && !savedPositions[id].isMinimized) {
-							widget.style.width = savedPositions[id].width;
-						}
-						if (savedPositions[id].height && !savedPositions[id].isMinimized) {
-							widget.style.height = savedPositions[id].height;
-						}
-						if (savedPositions[id].isMinimized) {
-							widget.classList.add('minimized');
-						} else {
-							widget.classList.remove('minimized');
-						}
-					}
+					loadWidgetPosition(id, savedPositions[id]);
 				});
 			} else {
 				applyDefaultLayout();
 			}
 		}
-		
-		function applyDefaultLayout() {
-			let topOffset = 20;
-			document.querySelectorAll('.widget').forEach(widget => {
+        
+        function loadWidgetPosition(id, widgetPosData) {
+			const widget = document.getElementById(id);
+			if (!widget || !widgetPosData) return;
+
+			widget.style.left = widgetPosData.left;
+			widget.style.top = widgetPosData.top;
+
+			if (widgetPosData.width && !widgetPosData.isMinimized) {
+				widget.style.width = widgetPosData.width;
+			}
+
+			if (widgetPosData.height && !widgetPosData.isMinimized) {
+				widget.style.height = widgetPosData.height;
+			}
+
+			if (widgetPosData.isMinimized) {
 				widget.classList.add('minimized');
-				widget.style.left = '20px';
-				widget.style.top = `${topOffset}px`;
-				topOffset += 80;
-			});
-			saveWidgetPositions();
+			} else {
+				widget.classList.remove('minimized');
+			}
 		}
 
-		function applyCoreWidgetFunctionality(widget) {
-			const header = widget.querySelector('.widget-header');
-			const resizeHandle = widget.querySelector('.resize-gripper');
-			let activeWidget = null;
-			let offsetX = 0, offsetY = 0;
-			let didDrag = false;
-
-			const onMouseDown = (e) => {
-				if (e.target.closest('button, input, .sticky-note, [contenteditable], .resize-gripper')) return;
-				if (e.button !== 0 && e.type !== 'touchstart') return;
-				
-				highestZ++;
-				widget.style.zIndex = highestZ;
-				didDrag = false;
-				activeWidget = widget;
-				activeWidget.classList.add('dragging');
-				
-				const touch = e.type === 'touchstart' ? e.touches[0] : e;
-				const rect = activeWidget.getBoundingClientRect();
-				offsetX = touch.clientX - rect.left;
-				offsetY = touch.clientY - rect.top;
-
-				document.addEventListener('mousemove', onMouseMove);
-				document.addEventListener('mouseup', onMouseUp);
-				document.addEventListener('touchmove', onMouseMove, { passive: false });
-				document.addEventListener('touchend', onMouseUp);
-			};
-
-			const onMouseMove = (e) => {
-				if (!activeWidget) return;
-				didDrag = true;
-				e.preventDefault();
-				
-				const touch = e.type === 'touchmove' ? e.touches[0] : e;
-				let newX = touch.clientX - offsetX;
-				let newY = touch.clientY - offsetY;
-
-				const container = document.getElementById('dashboard-container');
-				const containerRect = container.getBoundingClientRect();
-				const widgetRect = activeWidget.getBoundingClientRect();
-				newX = Math.max(0, Math.min(newX, containerRect.width - widgetRect.width));
-				newY = Math.max(0, Math.min(newY, containerRect.height - widgetRect.height));
-
-				activeWidget.style.left = `${newX}px`;
-				activeWidget.style.top = `${newY}px`;
-			};
-
-			const onMouseUp = () => {
-				if (!activeWidget) return;
-				activeWidget.classList.remove('dragging');
-				if (didDrag) saveWidgetPositions();
-				activeWidget = null;
-				document.removeEventListener('mousemove', onMouseMove);
-				document.removeEventListener('mouseup', onMouseUp);
-				document.removeEventListener('touchmove', onMouseMove);
-				document.removeEventListener('touchend', onMouseUp);
-			};
-			
-			const toggleMinimize = (e) => {
-				if (didDrag) return;
-				if (e.target.closest('.widget-header') && !e.target.closest('.close-widget-btn')) {
-					widget.classList.toggle('minimized');
-					saveWidgetPositions(); // Save state after toggling
-				}
-			};
-
-			header.addEventListener('mousedown', onMouseDown);
-			header.addEventListener('touchstart', onMouseDown);
-			header.addEventListener('click', toggleMinimize);
-
-			// --- Resizing Logic ---
-			let initialWidth, initialHeight, initialMouseX, initialMouseY;
-
-			function onResizeMouseDown(e) {
-				e.preventDefault();
-				e.stopPropagation();
-
-				widget.classList.add('resizing');
-				initialWidth = widget.offsetWidth;
-				initialHeight = widget.offsetHeight;
-				initialMouseX = e.clientX || e.touches[0].clientX;
-				initialMouseY = e.clientY || e.touches[0].clientY;
-
-				document.addEventListener('mousemove', onResizeMouseMove);
-				document.addEventListener('mouseup', onResizeMouseUp);
-				document.addEventListener('touchmove', onResizeMouseMove, { passive: false });
-				document.addEventListener('touchend', onResizeMouseUp);
-			}
-
-			function onResizeMouseMove(e) {
-				e.preventDefault();
-				const currentMouseX = e.clientX || e.touches[0].clientX;
-				const currentMouseY = e.clientY || e.touches[0].clientY;
-				const dx = currentMouseX - initialMouseX;
-				const dy = currentMouseY - initialMouseY;
-
-				widget.style.width = `${initialWidth + dx}px`;
-				widget.style.height = `${initialHeight + dy}px`;
-			}
-
-			function onResizeMouseUp() {
-				widget.classList.remove('resizing');
-				saveWidgetPositions();
-				document.removeEventListener('mousemove', onResizeMouseMove);
-				document.removeEventListener('mouseup', onResizeMouseUp);
-				document.removeEventListener('touchmove', onResizeMouseMove);
-				document.removeEventListener('touchend', onResizeMouseUp);
-			}
-
-			resizeHandle.addEventListener('mousedown', onResizeMouseDown);
-			resizeHandle.addEventListener('touchstart', onResizeMouseDown);
+        function loadWidgetPositionById(widgetId) {
+			const widget = document.getElementById(widgetId);
+			if (!widget) return;
+            loadWidgetPositionByWidget(widget.id);
 		}
-		
-		/**
-		 * Creates a generic widget container.
-		 * @param {string} id - The ID for the widget element.
-		 * @param {string} iconSVG - The SVG string for the widget's icon.
-		 * @param {string} title - The title of the widget.
-		 * @param {string[]} classes - An array of TailwindCSS classes for sizing (e.g., ['w-72']).
-		 * @returns {{widget: HTMLElement, content: HTMLElement, header: HTMLElement}} - The widget element, its content container, and header.
-		 */
-		function createWidget(id, iconSVG, title, classes = []) {
-			const widget = document.createElement('div');
-			widget.id = id;
-			widget.className = `widget rounded-xl ${classes.join(' ')}`;
 
-			const header = document.createElement('div');
-			header.className = 'widget-header flex items-center p-3 border-b border-white/20';
-			
-			const iconContainer = document.createElement('div');
-			iconContainer.className = 'icon-container w-6 h-6 mr-3 flex items-center justify-center';
-			iconContainer.innerHTML = iconSVG;
+        function loadWidgetPositionByWidget(widget) {
+			if (!widget) return;
 
-			const titleSpan = document.createElement('span');
-			titleSpan.className = 'title-text font-semibold flex-grow';
-			titleSpan.textContent = title;
+            const widgetPosData = {
+                top: widget.style.top,
+                left: widget.style.left,
+                width: widget.style.width,
+                height: widget.style.height,
+                isMinimized: widget.classList.contains('minimized')
+            };
 
-			header.appendChild(iconContainer);
-			header.appendChild(titleSpan);
-
-			const content = document.createElement('div');
-			content.className = 'widget-content p-4 relative h-full'; // Added relative and h-full
-
-			const resizeGripper = document.createElement('div');
-			resizeGripper.className = 'resize-gripper';
-			resizeGripper.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grip-diagonal" viewBox="0 0 16 16"><path d="M7 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z"/></svg>`;
-
-			widget.appendChild(header);
-			widget.appendChild(content);
-			widget.appendChild(resizeGripper);
-
-			return { widget, content, header };
+            loadWidgetPosition(widget.id, widgetPosData);
 		}
-			
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- CONTEXT MENU ---
-            function initContextMenu() {
-                const dashboardContainer = document.getElementById('dashboard-container');
-                const contextMenu = document.getElementById('context-menu-container');
-                const resetBtn = document.getElementById('reset-widgets-btn');
-                const toggleCollapseBtn = document.getElementById('toggle-collapse-btn');
-                const toggleBgBtn = document.getElementById('toggle-bg-btn');
-                const showSettingsBtn = document.getElementById('show-settings-btn');
-                let longPressTimer;
-                let startX, startY;
 
-                function showContextMenu() { contextMenu.style.display = 'flex'; }
-                function hideContextMenu() { contextMenu.style.display = 'none'; }
+        function resetWidgetPositionsAndState() {
+            // Clear all relevant local storage items
+            localStorage.removeItem(LS_WIDGET_POSITIONS_KEY);
+            //localStorage.removeItem(LS_TODO_ITEMS_KEY);
+            //localStorage.removeItem(LS_BACKGROUND_URL_KEY);
+            //localStorage.removeItem(LS_BACKGROUND_HIDDEN_KEY);
 
-                dashboardContainer.addEventListener('mousedown', e => {
-                    if (e.target !== dashboardContainer) return;
-                    startX = e.clientX;
-                    startY = e.clientY;
-                    longPressTimer = setTimeout(showContextMenu, 500);
-                });
-                dashboardContainer.addEventListener('mouseup', () => clearTimeout(longPressTimer));
-                dashboardContainer.addEventListener('mousemove', e => {
-                    if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
-                        clearTimeout(longPressTimer);
-                    }
-                });
-                
-                dashboardContainer.addEventListener('touchstart', e => {
-                    if (e.target !== dashboardContainer) return;
-                    const touch = e.touches[0];
-                    startX = touch.clientX;
-                    startY = touch.clientY;
-                    longPressTimer = setTimeout(showContextMenu, 500);
-                });
-                dashboardContainer.addEventListener('touchend', () => clearTimeout(longPressTimer));
-                dashboardContainer.addEventListener('touchmove', e => {
-                    const touch = e.touches[0];
-                    if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) {
-                        clearTimeout(longPressTimer);
-                    }
-                });
+            window.location.reload();
+        }
 
-                contextMenu.addEventListener('click', (e) => {
-                    if (e.target === contextMenu) hideContextMenu();
-                });
+        // resets the state "minimized" and position
+        function applyDefaultLayout() {
+            let topOffset = 20;
+            document.querySelectorAll('.widget').forEach(widget => {
+                widget.classList.add('minimized');
+                widget.style.left = '20px';
+                widget.style.top = `${topOffset}px`;
+                topOffset += 80;
+            });
+            saveWidgetPositions();
+        }
 
-                resetBtn.addEventListener('click', () => {
-                    // Clear all relevant local storage items
-                    localStorage.removeItem(WIDGET_POSITIONS_KEY);
-                    localStorage.removeItem(TODO_ITEMS_KEY);
-                    //localStorage.removeItem(BACKGROUND_URL_KEY);
-                    localStorage.removeItem(BACKGROUND_HIDDEN_KEY);
-                    window.location.reload();
-                });
+        /**
+         * Creates a generic widget container.
+         * @param {string} id - The ID for the widget element.
+         * @param {string} iconSVG - The SVG string for the widget's icon.
+         * @param {string} title - The title of the widget.
+         * @param {string[]} classes - An array of TailwindCSS classes for sizing (e.g., ['w-72']).
+         * @param {boolean} isCustom - True if this is a user-created widget.
+         * @returns {{widget: HTMLElement, content: HTMLElement, header: HTMLElement}} - The widget element, its content container, and header.
+         */
+        function createWidget(id, iconSVG, title, classes = [], isCustom = false) {
+            const widget = document.createElement('div');
+            widget.id = id;
+            widget.className = `widget rounded-xl ${classes.join(' ')}`;
 
-                toggleCollapseBtn.addEventListener('click', () => {
-                    const isCollapsed = toggleCollapseBtn.textContent.includes('Collapse');
-                    document.querySelectorAll('.widget').forEach(w => {
-                        if (isCollapsed) {
-                            w.classList.add('minimized');
-                        } else {
-                            w.classList.remove('minimized');
-                        }
-                    });
-                    toggleCollapseBtn.textContent = isCollapsed ? 'Expand All Widgets' : 'Collapse All Widgets';
-                    saveWidgetPositions();
-                    hideContextMenu();
-                });
+            const header = document.createElement('div');
+            header.className = 'widget-header flex items-center p-3 border-b border-white/20';
+            
+            const iconContainer = document.createElement('div');
+            iconContainer.className = 'icon-container w-6 h-6 mr-3 flex items-center justify-center';
+            iconContainer.innerHTML = iconSVG;
 
-                toggleBgBtn.addEventListener('click', () => {
-                    document.body.classList.toggle('bg-hidden');
-                    localStorage.setItem(BACKGROUND_HIDDEN_KEY, document.body.classList.contains('bg-hidden'));
-                    hideContextMenu();
-                });
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'title-text font-semibold flex-grow';
+            titleSpan.textContent = title;
 
-                showSettingsBtn.addEventListener('click', () => {
-                    const settingsWidget = document.getElementById('settings-widget');
-                    if (!settingsWidget) {
-                        initSettingsWidget();
-                    } else {
-                        // If it exists but was minimized, un-minimize it
-                        settingsWidget.classList.remove('minimized');
-                        settingsWidget.style.zIndex = ++highestZ;
-                    }
-                    hideContextMenu();
-                });
-            }
-
-            function initSettingsWidget() {
-                const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-300"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
-                const { widget, content, header } = createWidget('settings-widget', icon, 'Settings', ['w-96']);
-                
-                const currentBg = localStorage.getItem(BACKGROUND_URL_KEY) || 'https://images.pexels.com/photos/1025469/pexels-photo-1025469.jpeg';
-
-                content.innerHTML = `
-                    <div class="space-y-4">
-                        <div>
-                            <label for="bg-url-input" class="block text-sm font-medium text-gray-300 mb-1">Background Image URL</label>
-                            <input type="text" id="bg-url-input" class="w-full bg-white/10 text-white rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-400" value="${currentBg}">
-                        </div>
-                        <div class="flex justify-end">
-                            <button id="save-bg-btn" class="px-4 py-2 bg-purple-500 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                    </div>
-                `;
-                
+            header.appendChild(iconContainer);
+            header.appendChild(titleSpan);
+            
+            // Add settings button for custom widgets
+            if (isCustom) {
                 const closeButton = document.createElement('button');
                 closeButton.className = 'close-widget-btn text-gray-400 hover:text-white ml-2';
+                // Use the global variable to control visibility
+                if (!SHOW_WIDGET_CLOSE_BUTTON) {
+                    closeButton.style.display = 'none';
+                }
                 closeButton.innerHTML = `&#x2715;`; // 'X' symbol
                 closeButton.onclick = (e) => {
                     e.stopPropagation();
-                    widget.remove(); // This will close/hide the widget by removing it
+                    widget.remove();
+                    saveWidgetPositions();
+                    if (isCustom) {
+                        removeCustomWidget(id);
+                    }
                 };
+                
+                const settingsBtn = document.createElement('button');
+                settingsBtn.className = 'text-gray-400 hover:text-white ml-2 edit-widget-btn';
+                settingsBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
+                settingsBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const widgetData = JSON.parse(localStorage.getItem(LS_CUSTOM_WIDGETS_KEY)).find(w => w.id === id);
+                    if (widgetData) {
+                        // Pass all data to the editor modal
+                        initWidgetEditorModal('update', widgetData.id, widgetData.code, widgetData.title, widgetData.iconSVG);
+                    }
+                };
+                header.appendChild(settingsBtn);
                 header.appendChild(closeButton);
+            }
+
+            const content = document.createElement('div');
+            content.className = 'widget-content p-4 relative h-full';
+
+            const resizeGripper = document.createElement('div');
+            resizeGripper.className = 'resize-gripper';
+            resizeGripper.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grip-diagonal" viewBox="0 0 16 16"><path d="M7 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm2 2a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z"/></svg>`;
+
+            widget.appendChild(header);
+            widget.appendChild(content);
+            widget.appendChild(resizeGripper);
+
+            return { widget, content, header };
+        }
+        
+        function applyWidgetCoreFunctionality(widget) {
+            const header = widget.querySelector('.widget-header');
+            const resizeHandle = widget.querySelector('.resize-gripper');
+            let activeWidget = null;
+            let offsetX = 0, offsetY = 0;
+            let didDrag = false;
+
+            const onMouseDown = (e) => {
+                if (e.target.closest('button, input, .sticky-note, [contenteditable], .resize-gripper')) return;
+                if (e.button !== 0 && e.type !== 'touchstart') return;
+                
+                highestZ++;
+                widget.style.zIndex = highestZ;
+                didDrag = false;
+                activeWidget = widget;
+                activeWidget.classList.add('dragging');
+                
+                const touch = e.type === 'touchstart' ? e.touches[0] : e;
+                const rect = activeWidget.getBoundingClientRect();
+                offsetX = touch.clientX - rect.left;
+                offsetY = touch.clientY - rect.top;
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+                document.addEventListener('touchmove', onMouseMove, { passive: false });
+                document.addEventListener('touchend', onMouseUp);
+            };
+
+            const onMouseMove = (e) => {
+                if (!activeWidget) return;
+                didDrag = true;
+                e.preventDefault();
+                
+                const touch = e.type === 'touchmove' ? e.touches[0] : e;
+                let newX = touch.clientX - offsetX;
+                let newY = touch.clientY - offsetY;
+
+                const container = document.getElementById('dashboard-container');
+                const containerRect = container.getBoundingClientRect();
+                const widgetRect = activeWidget.getBoundingClientRect();
+                newX = Math.max(0, Math.min(newX, containerRect.width - widgetRect.width));
+                newY = Math.max(0, Math.min(newY, containerRect.height - widgetRect.height));
+
+                activeWidget.style.left = `${newX}px`;
+                activeWidget.style.top = `${newY}px`;
+            };
+
+            const onMouseUp = () => {
+                if (!activeWidget) return;
+                activeWidget.classList.remove('dragging');
+                if (didDrag) saveWidgetPositions();
+                activeWidget = null;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                document.removeEventListener('touchmove', onMouseMove);
+                document.removeEventListener('touchend', onMouseUp);
+            };
+            
+            const toggleMinimize = (e) => {
+                if (didDrag) return;
+                if (e.target.closest('.widget-header') && !e.target.closest('.close-widget-btn, .edit-widget-btn')) {
+                    widget.classList.toggle('minimized');
+                    saveWidgetPositions(); // Save state after toggling
+                }
+            };
+
+            header.addEventListener('mousedown', onMouseDown);
+            header.addEventListener('touchstart', onMouseDown);
+            header.addEventListener('click', toggleMinimize);
+
+            // --- Resizing Logic ---
+            let initialWidth, initialHeight, initialMouseX, initialMouseY;
+
+            function onResizeMouseDown(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                widget.classList.add('resizing');
+                initialWidth = widget.offsetWidth;
+                initialHeight = widget.offsetHeight;
+                initialMouseX = e.clientX || e.touches[0].clientX;
+                initialMouseY = e.clientY || e.touches[0].clientY;
+
+                document.addEventListener('mousemove', onResizeMouseMove);
+                document.addEventListener('mouseup', onResizeMouseUp);
+                document.addEventListener('touchmove', onResizeMouseMove, { passive: false });
+                document.addEventListener('touchend', onResizeMouseUp);
+            }
+
+            function onResizeMouseMove(e) {
+                e.preventDefault();
+                const currentMouseX = e.clientX || e.touches[0].clientX;
+                const currentMouseY = e.clientY || e.touches[0].clientY;
+                const dx = currentMouseX - initialMouseX;
+                const dy = currentMouseY - initialMouseY;
+
+                widget.style.width = `${initialWidth + dx}px`;
+                widget.style.height = `${initialHeight + dy}px`;
+            }
+
+            function onResizeMouseUp() {
+                widget.classList.remove('resizing');
+                saveWidgetPositions();
+                document.removeEventListener('mousemove', onResizeMouseMove);
+                document.removeEventListener('mouseup', onResizeMouseUp);
+                document.removeEventListener('touchmove', onResizeMouseMove);
+                document.removeEventListener('touchend', onResizeMouseUp);
+            }
+
+            resizeHandle.addEventListener('mousedown', onResizeMouseDown);
+            resizeHandle.addEventListener('touchstart', onResizeMouseDown);
+        }
+        
+        function removeCustomWidget(id) {
+            const widgets = JSON.parse(localStorage.getItem(LS_CUSTOM_WIDGETS_KEY)) || [];
+            const updatedWidgets = widgets.filter(w => w.id !== id);
+            localStorage.setItem(LS_CUSTOM_WIDGETS_KEY, JSON.stringify(updatedWidgets));
+        }
+        
+        function loadCustomWidgets() {
+            const customWidgets = JSON.parse(localStorage.getItem(LS_CUSTOM_WIDGETS_KEY)) || [];
+            customWidgets.forEach(widgetData => {
+                // Now using the new rendering function
+                renderWidgetFromData(widgetData);
+            });
+        }
+
+        /**
+         * Parses and renders a widget from its stored data (HTML + script).
+         * @param {Object} widgetData - The object containing id and code.
+         */
+        function renderWidgetFromData(widgetData) {
+            const { widget, content } = createWidget(
+                widgetData.id,
+                widgetData.iconSVG || DEFAULT_WIDGET_ICON,
+                widgetData.title || 'Custom Widget',
+                ['w-96'],
+                true
+            );
+            
+            try {
+                // Temporarily append the content to a div to handle scripts
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = widgetData.code;
+                
+                const scripts = tempDiv.querySelectorAll('script');
+                
+                // Extract HTML content excluding scripts
+                const htmlContent = Array.from(tempDiv.childNodes).filter(node => node.tagName !== 'SCRIPT').map(node => node.outerHTML).join('');
+                content.innerHTML = htmlContent;
 
                 document.getElementById('dashboard-container').appendChild(widget);
-				
-				// Center the widget on the screen
-                const widgetWidth = widget.offsetWidth;
-                const widgetHeight = widget.offsetHeight;
-                const screenWidth = window.innerWidth;
-                const screenHeight = window.innerHeight;
 
-                widget.style.left = `${(screenWidth - widgetWidth) / 2}px`;
-                widget.style.top = `${(screenHeight - widgetHeight) / 2}px`;
-				
-                applyCoreWidgetFunctionality(widget);
-
-                const saveBtn = content.querySelector('#save-bg-btn');
-                const input = content.querySelector('#bg-url-input');
-
-                saveBtn.addEventListener('click', () => {
-                    const newUrl = input.value.trim();
-                    if (newUrl) {
-						setBackgroundWallpaper(newUrl);
-                        localStorage.setItem(BACKGROUND_URL_KEY, newUrl);
+                // Now execute the scripts
+                scripts.forEach(script => {
+                    const newScript = document.createElement('script');
+                    if (script.src) {
+                        newScript.src = script.src;
+                    } else {
+                        newScript.textContent = script.textContent;
                     }
+                    // Use a flag to identify custom widget scripts and prevent duplicates
+                    newScript.dataset.widgetId = widgetData.id;
+                    document.body.appendChild(newScript);
                 });
+                
+                // apply widget core fns
+                applyWidgetCoreFunctionality(widget);
 
-                return widget;
+            } catch (e) {
+                console.error('Failed to load custom widget:', e);
+                content.innerHTML = `<p class="text-red-400">Error loading widget code.</p>`;
             }
+        }
+		
+		/**
+		 * Initializes the widget editor modal for creating or updating a custom widget.
+		 * @param {string} mode - 'create' or 'update'.
+		 * @param {string} widgetId - The ID of the widget being updated (only in 'update' mode).
+		 * @param {string} initialCode - The starting code for the editor.
+		 * @param {string} initialTitle - The title of the widget.
+		 * @param {string} initialIcon - The icon SVG of the widget.
+		 */
+		function initWidgetEditorModal(mode, widgetId = null, initialCode = '', initialTitle = 'Custom Widget', initialIcon = DEFAULT_WIDGET_ICON) {
+			const modal = document.getElementById('widget-editor-modal');
+			const titleInput = modal.querySelector('#widget-title-input');
+			const iconInput = modal.querySelector('#widget-icon-input');
+			const codeInput = modal.querySelector('#widget-code-input');
+			const previewBtn = modal.querySelector('#preview-widget-btn');
+			const saveBtn = modal.querySelector('#save-widget-btn');
+			const cancelBtn = modal.querySelector('#cancel-widget-btn');
+			const previewContainer = modal.querySelector('#widget-preview');
 			
-			async function defaultWidgets() {
-				await initDefaultWidgets();
-			}
+			// Set initial state based on mode
+			titleInput.value = initialTitle;
+			iconInput.value = initialIcon;
+			codeInput.value = initialCode;
+			previewContainer.innerHTML = '';
+			modal.style.display = 'flex';
 			
-			async function initThirdPartyWidgets() {
-				// container
-				await initPetGame();
+			// Function to clean up old preview scripts
+			function cleanupPreviewScripts() {
+				document.querySelectorAll('.preview-script').forEach(script => script.remove());
 			}
+
+			const handleSave = () => {
+				const title = titleInput.value || 'Custom Widget';
+				const iconSVG = iconInput.value || DEFAULT_WIDGET_ICON;
+				const code = codeInput.value;
+				const widgetData = { id: widgetId, title, iconSVG, code };
+				let customWidgets = JSON.parse(localStorage.getItem(LS_CUSTOM_WIDGETS_KEY)) || [];
+				
+				if (mode === 'create')
+                {
+					widgetData.id = 'custom-widget-' + Date.now();
+					customWidgets.push(widgetData);
+					localStorage.setItem(LS_CUSTOM_WIDGETS_KEY, JSON.stringify(customWidgets));
+					renderWidgetFromData(widgetData);
+				} 
+                else if (mode === 'update')
+                {
+					const index = customWidgets.findIndex(w => w.id === widgetId);
+					if (index !== -1) 
+                    {
+						customWidgets[index] = widgetData;
+					}
+					
+					localStorage.setItem(LS_CUSTOM_WIDGETS_KEY, JSON.stringify(customWidgets));
+
+					const oldWidget = document.getElementById(widgetId);
+					if (oldWidget) 
+                        oldWidget.remove();
+
+					const oldScript = document.querySelector(`script[data-widget-id="${widgetId}"]`);
+					if (oldScript) 
+                        oldScript.remove();
+
+					renderWidgetFromData(widgetData);
+                    loadWidgetPositionByWidget(oldWidget);
+				}
+				
+				cleanupPreviewScripts();
+				modal.style.display = 'none';
+			};
+			
+			const handlePreview = () => {
+				const code = codeInput.value;
+				cleanupPreviewScripts();
+				previewContainer.innerHTML = '';
+				
+				try {
+					const tempDiv = document.createElement('div');
+					tempDiv.innerHTML = code;
+					
+					const scripts = tempDiv.querySelectorAll('script');
+					const htmlContent = Array.from(tempDiv.childNodes).filter(node => node.tagName !== 'SCRIPT').map(node => node.outerHTML).join('');
+					previewContainer.innerHTML = htmlContent;
+
+					scripts.forEach(script => {
+						const newScript = document.createElement('script');
+						newScript.className = 'preview-script';
+						if (script.src) {
+							newScript.src = script.src;
+						} else {
+							newScript.textContent = script.textContent;
+						}
+						// Append the script to the preview container to execute it
+						previewContainer.appendChild(newScript);
+					});
+					
+				} catch(e) {
+					previewContainer.innerHTML = `<p class="text-red-400">Error rendering code. Check your syntax.</p>`;
+				}
+			};
+
+			saveBtn.onclick = handleSave;
+			previewBtn.onclick = handlePreview;
+			cancelBtn.onclick = () => { 
+				cleanupPreviewScripts();
+				modal.style.display = 'none';
+			};
+			
+			modal.addEventListener('click', (e) => {
+				if (e.target === modal) {
+					cleanupPreviewScripts();
+					modal.style.display = 'none';
+				}
+			});
+		}
+		
+        // CONTEXT MENU
+		// The context menu when you long press on 
+        // any of the available space in widget container -- "the desktop" LOL
+		function initContextMenu() {
+			const dashboardContainer = document.getElementById('dashboard-container');
+			const contextMenu = document.getElementById('context-menu-container');
+			const addWidgetBtn = document.getElementById('add-widget-btn');
+			const resetBtn = document.getElementById('reset-widgets-btn');
+			const toggleCollapseBtn = document.getElementById('toggle-collapse-btn');
+			const toggleBgBtn = document.getElementById('toggle-bg-btn');
+			const showSettingsBtn = document.getElementById('show-settings-btn');
+			let longPressTimer;
+			let startX, startY;
+
+			function showContextMenu() { contextMenu.style.display = 'flex'; }
+			function hideContextMenu() { contextMenu.style.display = 'none'; }
+
+			dashboardContainer.addEventListener('mousedown', e => {
+				if (e.target !== dashboardContainer) return;
+				startX = e.clientX;
+				startY = e.clientY;
+				longPressTimer = setTimeout(showContextMenu, 500);
+			});
+			dashboardContainer.addEventListener('mouseup', () => clearTimeout(longPressTimer));
+			dashboardContainer.addEventListener('mousemove', e => {
+				if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
+					clearTimeout(longPressTimer);
+				}
+			});
+			
+			dashboardContainer.addEventListener('touchstart', e => {
+				if (e.target !== dashboardContainer) return;
+				const touch = e.touches[0];
+				startX = touch.clientX;
+				startY = touch.clientY;
+				longPressTimer = setTimeout(showContextMenu, 500);
+			});
+			dashboardContainer.addEventListener('touchend', () => clearTimeout(longPressTimer));
+			dashboardContainer.addEventListener('touchmove', e => {
+				const touch = e.touches[0];
+				if (Math.abs(touch.clientX - startX) > 10 || Math.abs(touch.clientY - startY) > 10) {
+					clearTimeout(longPressTimer);
+				}
+			});
+
+			contextMenu.addEventListener('click', (e) => {
+				if (e.target === contextMenu) hideContextMenu();
+			});
+			
+			addWidgetBtn.addEventListener('click', () => {
+				initWidgetEditorModal('create');
+				hideContextMenu();
+			});
+
+			resetBtn.addEventListener('click', () => {
+				resetWidgetPositionsAndState();
+			});
+
+			toggleCollapseBtn.addEventListener('click', () => {
+				const isCollapsed = toggleCollapseBtn.textContent.includes('Collapse');
+				document.querySelectorAll('.widget').forEach(w => {
+					if (isCollapsed) {
+						w.classList.add('minimized');
+					} else {
+						w.classList.remove('minimized');
+					}
+				});
+				toggleCollapseBtn.textContent = isCollapsed ? 'Expand All Widgets' : 'Collapse All Widgets';
+				saveWidgetPositions();
+				hideContextMenu();
+			});
+
+			toggleBgBtn.addEventListener('click', () => {
+				document.body.classList.toggle('bg-hidden');
+				localStorage.setItem(LS_BACKGROUND_HIDDEN_KEY, document.body.classList.contains('bg-hidden'));
+				hideContextMenu();
+			});
+
+			showSettingsBtn.addEventListener('click', () => {
+				const settingsWidget = document.getElementById('settings-widget');
+				if (!settingsWidget) {
+					initSettingsWidget();
+				} else {
+					// If it exists but was minimized, un-minimize it
+					settingsWidget.classList.remove('minimized');
+					settingsWidget.style.zIndex = ++highestZ;
+				}
+				hideContextMenu();
+			});
+		}
+
+        // this is the settingd widget when we click/tap on
+        // Settings context menu item. 
+		function initSettingsWidget() {
+			const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-300"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+			const { widget, content, header } = createWidget('settings-widget', icon, 'Settings', ['w-96']);
+			
+			const currentBg = localStorage.getItem(LS_BACKGROUND_URL_KEY) || 'https://images.pexels.com/photos/1025469/pexels-photo-1025469.jpeg';
+
+			content.innerHTML = `
+				<div class="space-y-4">
+					<div>
+						<label for="bg-url-input" class="block text-sm font-medium text-gray-300 mb-1">Background Image URL</label>
+						<input type="text" id="bg-url-input" class="w-full bg-white/10 text-white rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-400" value="${currentBg}">
+					</div>
+					<div class="flex justify-end">
+						<button id="save-bg-btn" class="px-4 py-2 bg-purple-500 rounded-md hover:bg-purple-600">Save</button>
+					</div>
+					<div class="border-t border-gray-700 pt-4">
+						<h4 class="font-semibold text-sm mb-2">Data Management</h4>
+						<div class="flex justify-between space-x-2">
+							<button id="export-data-btn" class="flex-1 px-4 py-2 bg-blue-500 rounded-md hover:bg-blue-600">Export All Data</button>
+							<button id="import-data-btn" class="flex-1 px-4 py-2 bg-green-500 rounded-md hover:bg-green-600">Import Data</button>
+						</div>
+						<input type="file" id="import-file-input" class="hidden" accept=".json">
+					</div>
+				</div>
+			`;
+			
+			const closeButton = document.createElement('button');
+			closeButton.className = 'close-widget-btn text-gray-400 hover:text-white ml-2';
+			closeButton.innerHTML = `&#x2715;`; // 'X' symbol
+			closeButton.onclick = (e) => {
+				e.stopPropagation();
+				widget.remove(); // This will close/hide the widget by removing it
+			};
+			header.appendChild(closeButton);
+
+			document.getElementById('dashboard-container').appendChild(widget);
+			
+			// Center the widget on the screen
+			const widgetWidth = widget.offsetWidth;
+			const widgetHeight = widget.offsetHeight;
+			const screenWidth = window.innerWidth;
+			const screenHeight = window.innerHeight;
+
+			widget.style.left = `${(screenWidth - widgetWidth) / 2}px`;
+			widget.style.top = `${(screenHeight - widgetHeight) / 2}px`;
+			
+			applyWidgetCoreFunctionality(widget);
+
+			const saveBtn = content.querySelector('#save-bg-btn');
+			const input = content.querySelector('#bg-url-input');
+			const exportBtn = content.querySelector('#export-data-btn');
+			const importBtn = content.querySelector('#import-data-btn');
+			const importInput = content.querySelector('#import-file-input');
+
+			saveBtn.addEventListener('click', () => {
+				const newUrl = input.value.trim();
+				if (newUrl) {
+					setBackgroundWallpaper(newUrl);
+					localStorage.setItem(LS_BACKGROUND_URL_KEY, newUrl);
+				}
+			});
+			
+			exportBtn.addEventListener('click', () => {
+				const data = {};
+				for (let i = 0; i < localStorage.length; i++) {
+					const key = localStorage.key(i);
+					try {
+						data[key] = JSON.parse(localStorage.getItem(key));
+					} catch (e) {
+						data[key] = localStorage.getItem(key);
+					}
+				}
+				const jsonString = JSON.stringify(data, null, 2);
+				const blob = new Blob([jsonString], { type: 'application/json' });
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = 'dashboard_data.json';
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				URL.revokeObjectURL(url);
+			});
+
+			importBtn.addEventListener('click', () => {
+				importInput.click();
+			});
+
+			importInput.addEventListener('change', (e) => {
+				const file = e.target.files[0];
+				if (!file) return;
+
+				const reader = new FileReader();
+				reader.onload = (event) => {
+					try {
+						const importedData = JSON.parse(event.target.result);
+						localStorage.clear();
+						for (const key in importedData) {
+							if (importedData.hasOwnProperty(key)) {
+								if (typeof importedData[key] === 'object') {
+									localStorage.setItem(key, JSON.stringify(importedData[key]));
+								} else {
+									localStorage.setItem(key, importedData[key]);
+								}
+							}
+						}
+						window.location.reload();
+					} catch (error) {
+						console.error('Failed to parse imported file:', error);
+					}
+				};
+				reader.readAsText(file);
+			});
+
+			return widget;
+		}
+            
+        document.addEventListener('DOMContentLoaded', () => {
+            async function defaultWidgets() {
+                await initDefaultWidgets();
+            }
+            
+            async function initThirdPartyWidgets() {
+                await initPetGame();
+            }
 
             // --- MAIN EXECUTION ---
             async function main() {
+                // Initialize the context menu
+                initContextMenu();
+
                 // Apply saved settings first
                 applySavedSettings();
 
-                // Create all default widgets
+                // Create all default widgets, 3rd party widgets
+                // and apply functionality.
                 await defaultWidgets();
+                await initThirdPartyWidgets();
 				
-				// 3rd party widgets
-				await initThirdPartyWidgets();
+				// Apply core functionality to all the built ins and 3rd parties
+                document.querySelectorAll('.widget').forEach(applyWidgetCoreFunctionality);
 
-                // Apply core functionality to all of them
-                document.querySelectorAll('.widget').forEach(applyCoreWidgetFunctionality);
-
-                // Initialize the context menu
-                initContextMenu();
+                // Load custom widgets and apply functionality.
+                // no need to apply the core fns here. 
+                loadCustomWidgets();
 
                 // Finally, load their positions from storage, or apply default
                 loadWidgetPositions();

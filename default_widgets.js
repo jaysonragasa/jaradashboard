@@ -817,13 +817,89 @@ async function initSpotifyWidget() {
 	document.getElementById('dashboard-container').appendChild(widget);
 }
 
+async function initSpotifyPlayerWidget(token = "BQDKrOzD7Vp9Qd9THCvyC5wRi2R5UltKHQIQg4hDYEsTRTPDRqn6RP0TUvUwCpkcqkPOMNbXiVjX7cUB3SrfeEHIfXKxoP_wE_Eow70-kWuog35pGw5Dg_CzkzKdrmYbnNkRy7FAr-hoDoND27iz7kIc0fTdHJZ7PWpd9qYey33rqrRZ-Q2926LMnVfQLUefl1vxMaJd531Qavc_rbkFl-3FR3Rkp-jouTMzGzU6iTgfwT3Hu9x0UIt2ptWPwngKhS2sSNPOjRUZRxqLFLYXtkaC7CvmRRpi6LQsQPHUyj7zW2y7ZckRR53N6qIbnMyna7gugq7-YFwf6YXfpRJCcULnrDj7En1YTsROI6KWYnjnu7-H2XTYJTyESzvCBgZUfbDxNqoE_Hzk") {
+	// define an SVG icon
+	const icon = `<svg class="text-indigo-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
+	viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
+	stroke-linecap="round" stroke-linejoin="round">
+	<path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path>
+	<path d="M14 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2h-4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path>
+	</svg>`;
+
+	// widget - add the unique widget id and title
+	const { widget, content } = createWidget('about-widget', icon, 'Spotify Player', ['w-80']);
+
+	// define the content (container for Spotify info)
+	content.innerHTML = `
+		<div id="spotify-widget" class="p-4 text-sm text-gray-800">
+			<p>Loading Spotify Player...</p>
+			<div id="track-info" class="mt-2"></div>
+		</div>
+	`;
+
+	document.getElementById('dashboard-container').appendChild(widget);
+
+	// load the SDK script dynamically
+	const script = document.createElement("script");
+	script.src = "https://sdk.scdn.co/spotify-player.js";
+	document.body.appendChild(script);
+
+	window.onSpotifyWebPlaybackSDKReady = () => {
+		const player = new Spotify.Player({
+			name: 'My Widget Player',
+			getOAuthToken: cb => { cb(token); }, // use the token passed into initBasicWidget
+			volume: 0.5
+		});
+
+		// Error handling
+		player.addListener('initialization_error', ({ message }) => console.error(message));
+		player.addListener('authentication_error', ({ message }) => console.error(message));
+		player.addListener('account_error', ({ message }) => console.error(message));
+		player.addListener('playback_error', ({ message }) => console.error(message));
+
+		// Playback status updates
+		player.addListener('player_state_changed', state => {
+			if (!state) return;
+			const track = state.track_window.current_track;
+			document.getElementById("track-info").innerHTML = `
+				<div class="flex items-center space-x-2">
+					<img src="${track.album.images[0].url}" width="48" height="48" />
+					<div>
+						<p class="font-medium">${track.name}</p>
+						<p class="text-gray-500">${track.artists.map(a => a.name).join(", ")}</p>
+					</div>
+				</div>
+			`;
+		});
+
+		// Ready
+		player.addListener('ready', ({ device_id }) => {
+			console.log('Ready with Device ID', device_id);
+
+			// Transfer playback to the new device
+			fetch('https://api.spotify.com/v1/me/player', {
+				method: 'PUT',
+				body: JSON.stringify({ device_ids: [device_id], play: true }),
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${token}`
+				},
+			});
+		});
+
+		// Connect to the player!
+		player.connect();
+	};
+}
+
 async function initDefaultWidgets() {
 	initClockWidget();
 	initCalendarWidget();
 	initTodoListWidget();
 	initNotesWidget();
 	initWeatherWidget();
-	initSpotifyWidget();
+	//initSpotifyWidget();
+	//initSpotifyPlayerWidget();
 	
-	initStarfieldSimulation();
+	//initStarfieldSimulation();
 }
