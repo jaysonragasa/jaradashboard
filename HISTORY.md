@@ -1,10 +1,10 @@
 # History
 v 2.1  
-- Add confirmation if you want to delete the custom widget
+- Add confirmation if you want to delete the custom widget. No - you cannot delete the built-in ones
 
 v 2.0
 - Add widget directly from UI. 
-- Add widget visibility state in Settings widget.
+- Add custom widget visibility state in Settings widget.
 - Import/Export data. Just a way to save your entire settings and reload them
 - Bunch of code refactorings.
 - removed spotify web player
