@@ -278,6 +278,11 @@ SOFTWARE.
         
         const DEFAULT_WIDGET_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-300"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7.5 12 12.72 20.71 7.5"></polyline><line x1="12" y1="22.72" x2="12" y2="12"></line></svg>`;
 
+        function jsonSerialize(model) {
+            var json = JSON.stringify(model);
+            return json;
+        }
+
         /**
          * @param {string} message - The message to display in the confirmation modal.
          * @param {function} onConfirm - The function to call if the user confirms.
@@ -347,12 +352,13 @@ SOFTWARE.
                     isMinimized: widget.classList.contains('minimized')
                 };
             });
-            localStorage.setItem(LS_WIDGET_POSITIONS_KEY, JSON.stringify(positions));
+            localStorage.setItem(LS_WIDGET_POSITIONS_KEY, jsonSerialize(positions));
         }
 
-        function saveWidgetPosition(key, json) {
-            // thing of something 
-            // LOL
+        function saveWidgetPosition(widgetId, widgetPosition) {
+            const positions = JSON.parse(localStorage.getItem(LS_WIDGET_POSITIONS_KEY)) || {};
+            positions[widgetId] = widgetPosition;
+            localStorage.setItem(LS_WIDGET_POSITIONS_KEY, jsonSerialize(positions));
         }
         
         function loadWidgetPositions() {
@@ -623,7 +629,7 @@ SOFTWARE.
         function removeCustomWidget(id) {
             const widgets = JSON.parse(localStorage.getItem(LS_CUSTOM_WIDGETS_KEY)) || [];
             const updatedWidgets = widgets.filter(w => w.id !== id);
-            localStorage.setItem(LS_CUSTOM_WIDGETS_KEY, JSON.stringify(updatedWidgets));
+            localStorage.setItem(LS_CUSTOM_WIDGETS_KEY, jsonSerialize(updatedWidgets));
         }
         
         function loadCustomWidgets() {
@@ -726,7 +732,7 @@ SOFTWARE.
                 {
                     widgetData.id = 'custom-widget-' + Date.now();
                     customWidgets.push(widgetData);
-                    localStorage.setItem(LS_CUSTOM_WIDGETS_KEY, JSON.stringify(customWidgets));
+                    localStorage.setItem(LS_CUSTOM_WIDGETS_KEY, jsonSerialize(customWidgets));
                     renderWidgetFromData(widgetData);
                 } 
                 else if (mode === 'update')
@@ -737,7 +743,7 @@ SOFTWARE.
                         customWidgets[index] = widgetData;
                     }
                     
-                    localStorage.setItem(LS_CUSTOM_WIDGETS_KEY, JSON.stringify(customWidgets));
+                    localStorage.setItem(LS_CUSTOM_WIDGETS_KEY, jsonSerialize(customWidgets));
 
                     const oldWidget = document.getElementById(widgetId);
                     if (oldWidget) 
@@ -980,7 +986,7 @@ SOFTWARE.
                         data[key] = localStorage.getItem(key);
                     }
                 }
-                const jsonString = JSON.stringify(data, null, 2);
+                const jsonString = jsonSerialize(data, null, 2);
                 const blob = new Blob([jsonString], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -1008,7 +1014,7 @@ SOFTWARE.
                         for (const key in importedData) {
                             if (importedData.hasOwnProperty(key)) {
                                 if (typeof importedData[key] === 'object') {
-                                    localStorage.setItem(key, JSON.stringify(importedData[key]));
+                                    localStorage.setItem(key, jsonSerialize(importedData[key]));
                                 } else {
                                     localStorage.setItem(key, importedData[key]);
                                 }
@@ -1057,7 +1063,7 @@ SOFTWARE.
                         
                         const currentVisibility = JSON.parse(localStorage.getItem(LS_WIDGET_VISIBILITY_KEY)) || {};
                         currentVisibility[widgetId] = isChecked;
-                        localStorage.setItem(LS_WIDGET_VISIBILITY_KEY, JSON.stringify(currentVisibility));
+                        localStorage.setItem(LS_WIDGET_VISIBILITY_KEY, jsonSerialize(currentVisibility));
                         
                         const targetWidget = document.getElementById(widgetId);
                         if (targetWidget) {
