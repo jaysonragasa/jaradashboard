@@ -1,6 +1,6 @@
 # History
 v 2.1  
-- Add confirmation if you want to delete the widget
+- Add confirmation if you want to delete the custom widget
 
 v 2.0
 - Add widget directly from UI. 
