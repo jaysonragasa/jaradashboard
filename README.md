@@ -153,3 +153,154 @@ Just copy the entire code and paste it in HTML & Script field
 </script>
 ```
 
+### Digital Block Clock
+![Gif Preview](https://github.com/jaysonragasa/jaradashboard/blob/main/Animation%2008252025105714.gif?raw=true)
+
+#### SVG Icon
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><circle cx="32" cy="32" r="30" fill="white" stroke="black" stroke-width="3"/><line x1="32" y1="32" x2="16" y2="32" stroke="black" stroke-width="8"/><line x1="32" y1="32" x2="32" y2="10" stroke="black" stroke-width="7"/><line x1="32" y1="32" x2="32" y2="6" stroke="red" stroke-width="5" transform="rotate(120 32 32)"/><circle cx="32" cy="32" r="4" fill="black"/></svg>
+```
+
+#### HTML & Script
+```javascript
+<canvas id="clock" style="background: transparent; overflow: hidden; width: 100%; height: 100%"></canvas>
+<script>
+(function() {
+	const canvas = document.getElementById("clock");
+	const ctx = canvas.getContext("2d");
+
+	// One-time sizing at start
+	canvas.width = canvas.offsetWidth;
+	canvas.height = canvas.offsetHeight;
+
+	const blockSize = 6;
+
+	const digitPatterns = {
+		"0": [
+				"11110", 
+				"10011", 
+				"10101", 
+				"10101", 
+				"10101", 
+				"11001", 
+				"01111"],
+		"1": ["00100", "01100", "00100", "00100", "00100", "00100", "11111"],
+		"2": ["11111", "00001", "11111", "10000", "10000", "10000", "11111"],
+		"3": ["11111", "00001", "11111", "00001", "00001", "00001", "11111"],
+		"4": ["10001", "10001", "11111", "00001", "00001", "00001", "00001"],
+		"5": ["11111", "10000", "11111", "00001", "00001", "00001", "11111"],
+		"6": ["11111", "10000", "11111", "10001", "10001", "10001", "11111"],
+		"7": ["11111", "00001", "00010", "00100", "01000", "01000", "01000"],
+		"8": ["11111", "10001", "11111", "10001", "10001", "10001", "11111"],
+		"9": ["11111", "10001", "11111", "00001", "00001", "00001", "11111"],
+		":": ["0", "1", "0", "0", "1", "0", "0"]
+	};
+
+	class Block {
+		constructor(x, y, color) {
+			this.x = x;
+			this.y = y;
+			this.targetY = y;
+			this.vy = 0;
+			this.color = color;
+			this.falling = false;
+		}
+		update() {
+			if (this.falling) {
+				this.vy += 0.5;
+				this.y += this.vy;
+			} else {
+				if (Math.abs(this.y - this.targetY) > 1) {
+					this.y += (this.targetY - this.y) * 0.1;
+				} else {
+					this.y = this.targetY;
+				}
+			}
+		}
+		draw() {
+			ctx.fillStyle = this.color;
+			ctx.fillRect(this.x, this.y, blockSize - 2, blockSize - 2);
+		}
+	}
+
+	let digitBlocks = [];
+
+	function formatDate12h(date) {
+		let hours = date.getHours();
+		let minutes = date.getMinutes();
+		let seconds = date.getSeconds();
+
+		hours = hours % 12 || 12;
+
+		return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+	}
+
+	function getTimeString() {
+		return formatDate12h(new Date());
+	}
+
+	function buildDigitBlocks(digits) {
+		const spacing = 6;
+		let offsetX = (canvas.width - (digits.length * (5 * blockSize + spacing))) / 2;
+		const offsetY = (canvas.height - 7 * blockSize) / 2;
+
+		let newDigitBlocks = [];
+		for (let i = 0; i < digits.length; i++) {
+			const pattern = digitPatterns[digits[i]];
+			let digitGroup = [];
+			console.log(digits);
+			for (let row = 0; row < pattern.length; row++) {
+				for (let col = 0; col < pattern[row].length; col++) {
+					if (pattern[row][col] === "1") {
+						const x = offsetX + col * blockSize;
+						const y = offsetY + row * blockSize;
+						let b = new Block(x, -Math.random() * 200, "cyan");
+						b.targetY = y;
+						digitGroup.push(b);
+					}
+				}
+			}
+			newDigitBlocks.push(digitGroup);
+			offsetX += (5 * blockSize + spacing);
+		}
+		return newDigitBlocks;
+	}
+
+	function updateClock(newTime, oldTime) {
+		const newBlocks = buildDigitBlocks(newTime);
+		for (let i = 0; i < newTime.length; i++) {
+			if (newTime[i] !== oldTime[i]) {
+				digitBlocks[i].forEach(b => b.falling = true);
+				digitBlocks[i] = newBlocks[i];
+			}
+		}
+	}
+
+	function draw() {
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		digitBlocks.flat().forEach(b => {
+			b.update();
+			b.draw();
+		});
+	}
+
+	function startClock() {
+		let prevDigits = getTimeString();
+		digitBlocks = buildDigitBlocks(prevDigits);
+		updateClock(prevDigits, prevDigits);
+
+		setInterval(() => {
+			const newTime = getTimeString();
+			if (newTime !== prevDigits) {
+				updateClock(newTime, prevDigits);
+				prevDigits = newTime;
+			}
+			draw();
+		}, 1000 / 60); // ~60 FPS
+	}
+
+	// Start immediately when this script is injected
+	startClock();
+})();
+</script>
+```
