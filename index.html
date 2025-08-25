@@ -195,10 +195,32 @@ SOFTWARE.
         @keyframes spin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
         @keyframes drift { from { transform: translateX(-30%); } to { transform: translateX(30%); } }
         @keyframes fall { from { transform: translateY(0px); opacity: 1; } to { transform: translateY(200px); opacity: 0; } }
+
+        #bg-video-darkoverlay {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: linear-gradient(
+                rgba(0, 0, 0, 0.5),
+                rgba(0,0,0,0.1)
+            );
+        }
+        #bg-video video {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            object-fit: cover;
+            z-index: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="bg-black text-gray-100 overflow-hidden">
-
+    <div id="bg-video" style="position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; pointer-events:none;"></div>
+    <div id="bg-video-darkoverlay"></div>
+    
     <div id="dashboard-container" class="relative w-full h-screen p-4">
         <!-- Widgets will be dynamically inserted here -->
     </div>
@@ -264,6 +286,7 @@ SOFTWARE.
     
     <script src="default_widgets.js"></script>
     <script src="widget_petgame.js"></script>
+    <script src="camera.js"></script>
 
     <script>
         // --- GLOBAL CONFIG & STATE ---
@@ -273,6 +296,7 @@ SOFTWARE.
         const LS_BACKGROUND_HIDDEN_KEY = 'OpenDashboard_BackgroundHidden';
         const LS_CUSTOM_WIDGETS_KEY = 'OpenDashboard_CustomWidgets'; // New key for custom widgets
         const LS_WIDGET_VISIBILITY_KEY = 'OpenDashboard_WidgetVisibility'; // New key for widget visibility
+        const LS_BACKGROUND_MODE = "OpenDashboard_BackgroundMode";
         
         // Use this global variable to show or hide the close button on custom widgets
         const SHOW_WIDGET_CLOSE_BUTTON = true;
@@ -330,12 +354,27 @@ SOFTWARE.
             `;
         }
 
-        function applySavedSettings() {
-            // Apply background image
-            const savedBgUrl = localStorage.getItem(LS_BACKGROUND_URL_KEY);
-            if (savedBgUrl) {
-                setBackgroundWallpaper(savedBgUrl);
+        function applyBackground() {
+            backgroundMode = localStorage.getItem(LS_BACKGROUND_MODE) || 'image';
+            const bgOverlay = getElementById('bg-video-darkoverlay');
+
+            // set background image first
+            const bgUrl = localStorage.getItem(LS_BACKGROUND_URL_KEY);
+            if(bgUrl)
+                setBackgroundWallpaper(bgUrl);
+
+            if (backgroundMode === 'camera') {
+                showCameraBackground();
+                // show the background overlay
+                bgOverlay.style.display = 'block';
+            } else {
+                // hide the overlay for image mode
+                bgOverlay.style.display = 'none';
             }
+        }
+
+        function applySavedSettings() {
+            applyBackground();
 
             // Apply background visibility
             const isBgHidden = localStorage.getItem(LS_BACKGROUND_HIDDEN_KEY) === 'true';
@@ -365,6 +404,10 @@ SOFTWARE.
         }
 
         function getWidgetById(id) {
+            return document.getElementById(id);
+        }
+
+        function getElementById(id) {
             return document.getElementById(id);
         }
         
@@ -430,7 +473,7 @@ SOFTWARE.
 
             window.location.reload();
         }
-
+ 
         // resets the state "minimized" and position
         function applyDefaultLayout() {
             let topOffset = 20;
@@ -516,6 +559,7 @@ SOFTWARE.
             widget.appendChild(header);
             widget.appendChild(content);
             widget.appendChild(resizeGripper);
+            widget.style.zIndex = ++highestZ;
 
             return { widget, content, header };
         }
@@ -926,6 +970,8 @@ SOFTWARE.
         // this is the settings widget when we click/tap on
         // Settings context menu item. 
         function initSettingsWidget() {
+            var backgroundMode = "image";
+
             const existingWidget = document.getElementById('settings-widget');
             if (existingWidget) {
                 existingWidget.remove();
@@ -934,13 +980,27 @@ SOFTWARE.
             const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-300"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
             const { widget, content, header } = createWidget('settings-widget', icon, 'Settings', ['w-94', 'min-h-[400px]']);
             
-            const currentBg = localStorage.getItem(LS_BACKGROUND_URL_KEY) || 'https://images.pexels.com/photos/1025469/pexels-photo-1025469.jpeg';
+            const currentBg = localStorage.getItem(LS_BACKGROUND_URL_KEY) || 'https://images.pexels.com/photos/212324/pexels-photo-212324.jpeg';
+            const currentMode = localStorage.getItem(LS_BACKGROUND_MODE) || 'image';
 
             content.innerHTML = `
                 <div class="space-y-4">
                     <div>
-                        <label for="bg-url-input" class="block text-sm font-medium text-gray-300 mb-1">Background Image URL</label>
-                        <input type="text" id="bg-url-input" class="w-full bg-white/10 text-white rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-400" value="${currentBg}">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Background Source</label>
+                        <div class="flex space-x-4 mb-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="bg-mode" value="image" ${currentMode === 'image' ? 'checked' : ''} class="mr-2">
+                                <span>Image</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="bg-mode" value="camera" ${currentMode === 'camera' ? 'checked' : ''} class="mr-2">
+                                <span>Camera</span>
+                            </label>
+                        </div>
+                        <div id="bg-url-group" ${currentMode === 'camera' ? 'style="display:none;"' : ''}>
+                            <label for="bg-url-input" class="block text-sm font-medium text-gray-300 mb-1">Background Image URL</label>
+                            <input type="text" id="bg-url-input" class="w-full bg-white/10 text-white rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-400" value="${currentBg}">
+                        </div>
                     </div>
                     <div class="flex justify-end">
                         <button id="save-bg-btn" class="px-4 py-2 bg-purple-500 rounded-md hover:bg-purple-600">Save</button>
@@ -977,6 +1037,15 @@ SOFTWARE.
             
             applyWidgetCoreFunctionality(widget);
 
+            const modeRadios = content.querySelectorAll('input[name="bg-mode"]');
+            modeRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    const mode = e.target.value;
+                    backgroundMode = mode;
+                    localStorage.setItem(LS_BACKGROUND_MODE, backgroundMode);
+                });
+            });
+            
             const saveBtn = content.querySelector('#save-bg-btn');
             const input = content.querySelector('#bg-url-input');
             const exportBtn = content.querySelector('#export-data-btn');
@@ -985,11 +1054,15 @@ SOFTWARE.
             const customWidgetsList = content.querySelector('#custom-widgets-list');
 
             saveBtn.addEventListener('click', () => {
+                // just apply the backgroundImage regardless of mode
                 const newUrl = input.value.trim();
-                if (newUrl) {
-                    setBackgroundWallpaper(newUrl);
+                if (newUrl) 
                     localStorage.setItem(LS_BACKGROUND_URL_KEY, newUrl);
-                }
+
+                if (backgroundMode === 'image')
+                    removeCameraVideo();
+
+                applyBackground();
             });
             
             exportBtn.addEventListener('click', () => {
