@@ -1,4 +1,4 @@
-# How to Add a New Widget
+## How to add new widget from script
 
 Adding new widgets to this dashboard is designed to be straightforward. By following this modular pattern, you can keep the code clean and easily extend the dashboard's functionality.
 
@@ -71,10 +71,17 @@ const quoteText = content.querySelector('#quote-text');
 const quoteAuthor = content.querySelector('#quote-author');
 
 try {
-    const response = await fetch('[https://api.quotable.io/random](https://api.quotable.io/random)');
+    const response = await fetch('https://api.api-ninjas.com/v1/quotes', {
+       method: 'GET',
+	   headers: {
+	      'X-Api-Key': '<YOUR_API_KEY_HERE>',
+	      'Content-Type': 'application/json'
+	   }
+    });
     const data = await response.json();
-    quoteText.textContent = `“${data.content}”`;
-    quoteAuthor.textContent = `— ${data.author}`;
+    const quote = data[0];
+    quoteText.textContent = `“${quote.quote}”`;
+    quoteAuthor.textContent = `— ${quote.author}`;
 } catch (error) {
     quoteText.textContent = "Could not load quote.";
 }
@@ -94,7 +101,6 @@ async function main() {
     initCalendarWidget();
     initTodoListWidget();
     initNotesWidget();
-    await initTinyChatWidget();
     await initQuoteWidget(); // <-- Add your new widget's init function here
 
     // Then apply core functionality to all of them
@@ -102,3 +108,58 @@ async function main() {
     
     // ... rest of the main function
 }
+```
+
+---
+
+### Full Version of Quote of The Day Widget
+
+```javascript
+// quote WIDGET
+async function initQuoteWidget() {
+	const icon = `<svg class="text-indigo-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path><path d="M14 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2h-4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path></svg>`;
+	const { widget, content } = createWidget('quote-widget', icon, 'Quote of the Day', ['w-80']);
+	
+	content.innerHTML = `
+		<blockquote id="quote-text" class="text-lg italic">Loading...</blockquote>
+		<cite id="quote-author" class="block text-right mt-2 not-italic"></cite>
+	`;
+	
+	document.getElementById('dashboard-container').appendChild(widget);
+	
+	const quoteText = content.querySelector('#quote-text');
+	const quoteAuthor = content.querySelector('#quote-author');
+
+	try {
+		const response = await fetch('https://api.api-ninjas.com/v1/quotes', {
+		  method: 'GET',
+		  headers: {
+			'X-Api-Key': '<YOUR_API_KEY_GOES_HERE>',
+			'Content-Type': 'application/json'
+		  }
+		});
+		const data = await response.json();
+		const quote = data[0];
+		quoteText.textContent = `“${quote.quote}”`;
+		quoteAuthor.textContent = `— ${quote.author}`;
+	} catch (error) {
+		quoteText.textContent = "Could not load quote.";
+	}
+}
+```
+### Here's another very basic of a widget 
+```javascript
+async function initAboutWidget() {
+	// define an SVG icon
+	const icon = `<svg class="text-indigo-300" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path><path d="M14 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2h-4c-1.25 0-2 .75-2 2v6c0 7 4 8 7 8z"></path></svg>`;
+
+	// widget - add the unique widget id and title
+	const { widget, content } = createWidget('about-widget', icon, 'Basic Widget', ['w-80']);
+
+	// define the content
+	content.innerHTML = `<blockquote id="about-text" class="text-lg italic text-center">Basic Widget</blockquote>`;
+
+	//	do not forget to add this new widget in our dashboard-container
+	document.getElementById('dashboard-container').appendChild(widget);
+}
+```
