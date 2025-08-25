@@ -237,6 +237,7 @@ SOFTWARE.
             <button id="reset-widgets-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Reset Widgets</button>
             <button id="toggle-collapse-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Collapse All Widgets</button>
             <button id="toggle-bg-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Toggle Background</button>
+            <button id="btn-fullscreen" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Fullscreen</button>
             <div class="border-t border-gray-700 my-1"></div>
             <button id="show-settings-btn" class="w-full text-left px-4 py-2 rounded-md hover:bg-gray-700">Settings</button>
             <div class="border-t border-gray-700 my-1"></div>
@@ -964,6 +965,19 @@ SOFTWARE.
                     settingsWidget.style.zIndex = ++highestZ;
                 }
                 hideContextMenu();
+            });
+
+            document.getElementById('btn-fullscreen').addEventListener('click', () => {
+                const docElm = document.documentElement;
+                if (docElm.requestFullscreen) {
+                    docElm.requestFullscreen();
+                } else if (docElm.msRequestFullscreen) {
+                    docElm.msRequestFullscreen();
+                } else if (docElm.mozRequestFullScreen) {
+                    docElm.mozRequestFullScreen();
+                } else if (docElm.webkitRequestFullscreen) {
+                    docElm.webkitRequestFullscreen();
+                }
             });
         }
 
