@@ -1,4 +1,4 @@
-![alt text](https://github.com/jaysonragasa/jaradashboard/blob/main/Animation%2008222025112652.gif?raw=true)
+![Gif Preview](https://github.com/jaysonragasa/jaradashboard/blob/main/anim_v2_1.gif?raw=true)
 
 # Open Dashboard with Modular Widgets
 
@@ -33,3 +33,13 @@ A sleek, modern, and customizable dashboard built with vanilla JavaScript. This 
 - **APIs**:
   - **Open-Meteo API** for live weather data.
 - **Browser `localStorage`** for persisting widget positions and data.
+
+---
+
+## Add Widget
+
+![Gif Preview](https://github.com/jaysonragasa/jaradashboard/blob/main/addwidget.gif?raw=true)
+
+
+## Manage Widget
+![Gif Preview](https://github.com/jaysonragasa/jaradashboard/blob/main/managewidget.gif?raw=true)
