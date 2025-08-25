@@ -39,7 +39,10 @@ SOFTWARE.
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             touch-action: none; /* Prevent default touch actions like scrolling when dragging */
-            background-image: linear-gradient(rgba(0, 0, 0, 0.8),rgba(0, 0, 0, 0.6)), url('https://images.pexels.com/photos/1025469/pexels-photo-1025469.jpeg');
+            background-image: linear-gradient(
+                rgba(0, 0, 0, 0.3),
+                rgba(0, 0, 0, 0.0)), 
+                url('https://images.pexels.com/photos/212324/pexels-photo-212324.jpeg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -360,6 +363,10 @@ SOFTWARE.
             positions[widgetId] = widgetPosition;
             localStorage.setItem(LS_WIDGET_POSITIONS_KEY, jsonSerialize(positions));
         }
+
+        function getWidgetById(id) {
+            return document.getElementById(id);
+        }
         
         function loadWidgetPositions() {
             const savedPositions = JSON.parse(localStorage.getItem(LS_WIDGET_POSITIONS_KEY));
@@ -395,7 +402,7 @@ SOFTWARE.
         }
 
         function loadWidgetPositionById(widgetId) {
-            const widget = document.getElementById(widgetId);
+            const widget = getWidgetById(widgetId);
             if (!widget) return;
             loadWidgetPositionByWidget(widget.id);
         }
@@ -454,7 +461,7 @@ SOFTWARE.
             header.className = 'widget-header flex items-center p-3 border-b border-white/20';
             
             const iconContainer = document.createElement('div');
-            iconContainer.className = 'icon-container w-6 h-6 mr-3 flex items-center justify-center';
+            iconContainer.className = 'icon-container w-4 h-6 mr-3 flex items-center justify-center';
             iconContainer.innerHTML = iconSVG;
 
             const titleSpan = document.createElement('span');
@@ -513,6 +520,19 @@ SOFTWARE.
             return { widget, content, header };
         }
         
+        function centerWidget(widget) {
+            if (!widget) return;
+
+            const widgetWidth = widget.offsetWidth;
+            const widgetHeight = widget.offsetHeight;
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+
+            widget.style.position = "absolute"; // ensure it's positionable
+            widget.style.left = `${(screenWidth - widgetWidth) / 2}px`;
+            widget.style.top = `${(screenHeight - widgetHeight) / 2}px`;
+        }
+
         function applyWidgetCoreFunctionality(widget) {
             const header = widget.querySelector('.widget-header');
             const resizeHandle = widget.querySelector('.resize-gripper');
@@ -652,7 +672,7 @@ SOFTWARE.
                 widgetData.id,
                 widgetData.iconSVG || DEFAULT_WIDGET_ICON,
                 widgetData.title || 'Custom Widget',
-                ['w-96'],
+                ['w-90'],
                 true
             );
             
@@ -734,6 +754,9 @@ SOFTWARE.
                     customWidgets.push(widgetData);
                     localStorage.setItem(LS_CUSTOM_WIDGETS_KEY, jsonSerialize(customWidgets));
                     renderWidgetFromData(widgetData);
+                    const widget = getWidgetById(widgetData.id);
+                    if(widget)
+                        centerWidget(widget);
                 } 
                 else if (mode === 'update')
                 {
@@ -745,7 +768,7 @@ SOFTWARE.
                     
                     localStorage.setItem(LS_CUSTOM_WIDGETS_KEY, jsonSerialize(customWidgets));
 
-                    const oldWidget = document.getElementById(widgetId);
+                    const oldWidget = getWidgetById(widgetId);
                     if (oldWidget) 
                         oldWidget.remove();
 
@@ -909,7 +932,7 @@ SOFTWARE.
             }
 
             const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-300"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
-            const { widget, content, header } = createWidget('settings-widget', icon, 'Settings', ['w-96', 'min-h-[400px]']);
+            const { widget, content, header } = createWidget('settings-widget', icon, 'Settings', ['w-94', 'min-h-[400px]']);
             
             const currentBg = localStorage.getItem(LS_BACKGROUND_URL_KEY) || 'https://images.pexels.com/photos/1025469/pexels-photo-1025469.jpeg';
 
@@ -950,14 +973,7 @@ SOFTWARE.
 
             document.getElementById('dashboard-container').appendChild(widget);
             
-            // Center the widget on the screen
-            const widgetWidth = widget.offsetWidth;
-            const widgetHeight = widget.offsetHeight;
-            const screenWidth = window.innerWidth;
-            const screenHeight = window.innerHeight;
-
-            widget.style.left = `${(screenWidth - widgetWidth) / 2}px`;
-            widget.style.top = `${(screenHeight - widgetHeight) / 2}px`;
+            centerWidget(widget);
             
             applyWidgetCoreFunctionality(widget);
 
